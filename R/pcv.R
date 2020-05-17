@@ -22,7 +22,7 @@ pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20), nseg = 4, s
 
    # keep names if any
    attrs <- attributes(X)
-   
+
    mX <- apply(X, 2, mean)
    sX <- if (scale) apply(X, 2, sd) else rep(1, ncol(X))
 
@@ -86,99 +86,33 @@ getR <- function(base1, base2) {
    base1 <- as.matrix(base1);
    base2 <- as.matrix(base2);
 
-   R1 <- rotationMatrixToX1(base1[, 1]);
-   R2 <- rotationMatrixToX1(base2[, 1]);
+   R1 <- rotationMatrixToX1(base1[, 1])
+   R2 <- rotationMatrixToX1(base2[, 1])
 
    if (ncol(base1) == 1) {
-      R <- t(R2) %*% R1;
+      R <- t(R2) %*% R1
    } else {
       # Compute bases rotated to match their first vectors to [1 0 0 ... 0]'
-      base1_r <- as.matrix(R1 %*% base1);
-      base2_r <- as.matrix(R2 %*% base2);
+      base1_r <- as.matrix(R1 %*% base1)
+      base2_r <- as.matrix(R2 %*% base2)
 
       # Get bases of subspaces of dimension n-1 (forget x1)
-      nr <- nrow(base1_r); # equal to nrow(base2_r)
-      nc <- ncol(base1_r); # equal to ncol(base2_r)
-      base1_rs <- base1_r[2:nr, 2:nc];
-      base2_rs <- base2_r[2:nr, 2:nc];
+      nr <- nrow(base1_r) # equal to nrow(base2_r)
+      nc <- ncol(base1_r) # equal to ncol(base2_r)
+      base1_rs <- base1_r[2:nr, 2:nc]
+      base2_rs <- base2_r[2:nr, 2:nc]
 
       # Recursevely compute rotation matrix to map subspaces
-      Rs <- getR(base1_rs, base2_rs);
+      Rs <- getR(base1_rs, base2_rs)
 
       # Construct rotation matrix of the whole space (recall x1)
-      M <- eye(nr);
-      M[2:nr, 2:nr] <- Rs;
+      M <- eye(nr)
+      M[2:nr, 2:nr] <- Rs
 
-      R <- crossprod(R2, (M %*% R1));
+      R <- crossprod(R2, (M %*% R1))
    }
 
    return(R);
-}
-
-#' Create the identity matrix
-#'
-#' @param n
-#' Size of the matrix
-#'
-#' @return
-#' The identity matrix (n x n)
-#'
-#' @export
-eye <- function(n) {
-   X <- matrix(0, n, n)
-   diag(X) <- 1
-   return(X)
-}
-
-#' Cross product of two 3D vectors
-#'
-#' @param ab
-#' Coordinates of the first vector (sequence with 3 numbers)
-#' @param ac
-#' Coordinates of the second vector (sequence with 3 numbers)
-#'
-#' @return
-#' A vector (sequence with 3 numbers)
-crossProduct <- function(ab,ac){
-   abci <- ab[2] * ac[3] - ac[2] * ab[3];
-   abcj <- ac[1] * ab[3] - ab[1] * ac[3];
-   abck <- ab[1] * ac[2] - ac[1] * ab[2];
-   return(c(abci, abcj, abck))
-}
-
-#' Projects one vector on another
-#' @param u
-#' Vector defining direction of the projection
-#' @param v
-#' Vector to be projected on u
-#'
-#' @return
-#' Coordinated of the projected vector
-proj <- function(u, v) {
-   return(c((t(v) %*% u) / (t(u) %*% u)) * u);
-}
-
-#' Gram Schmidt method for orthonormalization
-#'
-#' @param v
-#' Matrix with at least two columns (each column is a vector)
-#'
-#' @return
-#' Matrix after orthonormalization
-GramSchmidt <- function(v) {
-   k <- ncol(v);
-   assert("The input matrix must include more than one vector.", k >= 2);
-
-   for (i in 1:k) {
-      v[, i] <- v[, i] / norm(v[, i], type = "2");
-      if (i < k) {
-         for (j in (i + 1):k) {
-            v[, j] <- v[, j] - proj(v[, i], v[, j]);
-         }
-      }
-   }
-
-   return(v);
 }
 
 #' Creates a rotation matrix to map a vector x to [1 0 0 ... 0]
@@ -215,18 +149,19 @@ rotationMatrixToX1 <- function(x) {
    return(R)
 }
 
-#' Creates a rotation matrix to map vector v to vector u
+
+#' Create the identity matrix
 #'
-#' @param v
-#' Vector to be rotated (sequence with J coordinates)
-#' @param u
-#' Vector v should be alligned with (sequence with J coordinates)
+#' @param n
+#' Size of the matrix
 #'
 #' @return
-#' Rotation matrix (JxJ)
-rotationMatrixToMatchVectors <- function(v, u) {
-   Rv <- rotationMatrixToX1(v)
-   Ru <- rotationMatrixToX1(u)
-   R <- crossprod(Ru, Rv)
-   return(R)
+#' The identity matrix (n x n)
+#'
+#' @export
+eye <- function(n) {
+   X <- matrix(0, n, n)
+   diag(X) <- 1
+   return(X)
 }
+
