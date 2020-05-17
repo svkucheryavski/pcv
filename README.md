@@ -26,7 +26,7 @@ pvset <- pcv(X, ncomp = 10, nseg = 4, scale = FALSE)
 
 Here `X` is your calibration set (as a numerical matrix), `ncomp` is a number of prinicpal components for PCA decomposition (use at lease enough to explain 95-99% of variation of the data values), `nseg` is the number of segments for cross-validation procedure. So far only systematic cross-validation (venetian blinds) is supported, so make sure that rows of `X` are sorted correctly or shuffled. Parameter `scale` allows to standardize your data prior to the generation, which is useful if your variables have different nature and/or units. The generated data will be unscaled though.
 
-File `demo.R` contains a demo code based on $NIRSim$ dataset from the paper. See comments in the code for more details.
+File `demo.R` contains a demo code based on *NIRSim* dataset from the paper. See comments in the code for more details.
 
 ## How to use in MATLAB
 
@@ -36,12 +36,8 @@ See details for R implementation above.  To use it in MATLAB you have to copy fi
 pvset = pcv(X, 'nComp', 4, 'nSeg', 4, 'Scale', true);
 ```
 
-File `demo.m` contains a demo code based on $NIRSim$ dataset from the paper. See comments in the code for more details.
+File `demo.m` contains a demo code based on *NIRSim* dataset from the paper. See comments in the code for more details.
 
 ### Bugs and improvements
 
 We plan to improve and extend the code gradually. If you found a bug please report using issues or send an email.
-
-
-
-
