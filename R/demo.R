@@ -10,12 +10,12 @@ source("pcv.R")
 load("nirsim.RData")
 
 # create pseudo-validation set
-spectra_pv <- pcv(spectra, ncomp = 8, nseg = 4)
+spectra_pv <- pcv(spectra, ncomp = 6, nseg = 4)
 
 # show plot with original and generated spectra
 par(mfrow = c(2, 1))
-matplot(spectra, type = "l", col = "blue", lty = 1, main = "Original")
-matplot(spectra_pv, type = "l", col = "blue", lty = 1, main = "Pseudo-validation")
+mdaplot(spectra, type = "l", main = "Original")
+mdaplot(spectra_pv, type = "l", main = "Pseudo-validation")
 
 # make PCA model for calibration set
 m <- pca(spectra, 6)
@@ -23,8 +23,8 @@ m <- pca(spectra, 6)
 # project pseudo-validation set to the model
 res_pv <- predict(m, spectra_pv)
 
-# show distance plot for A = 2 and A = 5
+# show extreme plot for A = 4
 par(mfrow = c(1, 2))
-plotResiduals(m, ncomp = 2, res = list(cal = m$res$cal, pv = res_pv)
-plotResiduals(m, ncomp = 5, res = list(cal = m$res$cal, pv = res_pv)
+plotExtreme(m, res = m$res$cal, comp = 4, main = "Extreme (cal)")
+plotExtreme(m, res = res_pv, comp = 4, main = "Extreme (pv)")
 

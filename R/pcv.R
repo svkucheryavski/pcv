@@ -21,9 +21,8 @@
 pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20), nseg = 4, scale = FALSE) {
 
    # keep names if any
-   X_colnames <- colnames(X)
-   X_rownames <- rownames(X)
-
+   attrs <- attributes(X)
+   
    mX <- apply(X, 2, mean)
    sX <- if (scale) apply(X, 2, sd) else rep(1, ncol(X))
 
@@ -67,8 +66,7 @@ pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20), nseg = 4, s
    Xpv <- sweep(Xpv, 2, sX, "*")
    Xpv <- sweep(Xpv, 2, mX, "+")
 
-   colnames(Xpv) <- X_colnames
-   rownames(Xpv) <- X_rownames
+   attributes(Xpv) <- attrs
    return(Xpv)
 }
 
