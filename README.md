@@ -7,7 +7,7 @@ This repository contains implementation of Procrustes cross-validation in R and 
 Procrustes cross-validation is a new approach for validation of chemometric models. It makes possible to generate a new dataset, named *pseudo-validation set* and use it for validation of models in the same way as with an independent test set. The generation is done using following algorithm:
 
 1. A global PCA model is created using calibration set $\mathbf{X}$ and $A$ components
-2. The rows of matrix $\mathbf{X}$ are split into $K$ segments using venetian blinds splitting
+2. The rows of matrix <img src=“https://render.githubusercontent.com/render/math?math=\mathbf{X}&mode=inline”> are split into $K$ segments using venetian blinds splitting
 3. For each segment $k$ from ${1, 2, ..., K}$:
     * a local PCA model is created using the rows from the segment
     * an angle between the local and the global model is estimated
