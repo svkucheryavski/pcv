@@ -21,7 +21,7 @@ So, pseudo-validation set is built on top of the calibration set but has its own
 All code is located in `pcv.R`, no extra packages are needed. Simply copy the file to your working directory and use `source("pcv.R")` inside your script to load all necessary functions to the environment. Then the syntax is follows:
 
 ```r
-pvset <- pcv(X, ncomp = 10, nseg = 4, scale = FALSE)
+pvset <- pcv(X, ncomp, nseg, scale)
 ```
 
 Here `X` is your calibration set (as a numerical matrix), `ncomp` is a number of prinicpal components for PCA decomposition (use at lease enough to explain 95-99% of variation of the data values), `nseg` is the number of segments for cross-validation procedure. So far only systematic cross-validation (venetian blinds) is supported, so make sure that rows of `X` are sorted correctly or shuffled. Parameter `scale` allows to standardize your data prior to the generation, which is useful if your variables have different nature and/or units. The generated data will be unscaled though.
@@ -33,7 +33,7 @@ File `demo.R` contains a demo code based on *NIRSim* dataset from the paper. See
 See details for R implementation above.  To use it in MATLAB you have to copy file `pcv.m` to your script folder (or any other folder MATLAB knows path to). Then use the following syntax:
 
 ```matlab
-pvset = pcv(X, 'nComp', 4, 'nSeg', 4, 'Scale', true);
+pvset = pcv(X, nComp, nSeg, Scale);
 ```
 
 File `demo.m` contains a demo code based on *NIRSim* dataset from the paper. See comments in the code for more details.
