@@ -1,6 +1,10 @@
 # This is demo code for Procrustes cross-validation method
 # It requires "mdatools" package, if you do not have one
 # Run: install.packages("mdatools")
+#
+# The code creates a plot similar to what you can see on Figure 5
+# of the original paper (bottom plot in the middle column)
+#
 
 library(mdatools)
 rm(list = ls())
@@ -8,7 +12,6 @@ source("pcv.R")
 
 # load original spectra
 load("nirsim.RData")
-write.table(spectra, file = "nirsim.csv", sep = ";", dec = ",")
 
 # create pseudo-validation set
 spectra_pv <- pcv(spectra, ncomp = 6, nseg = 4)
