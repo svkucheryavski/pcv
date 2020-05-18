@@ -24,7 +24,7 @@ All code is located in `pcv.R`, no extra packages are needed. Simply copy the fi
 pvset <- pcv(X, ncomp, nseg, scale)
 ```
 
-Here `X` is your calibration set (as a numerical matrix), `ncomp` is a number of prinicpal components for PCA decomposition (use at lease enough to explain 95-99% of variation of the data values), `nseg` is the number of segments for cross-validation procedure. So far only systematic cross-validation (venetian blinds) is supported, so make sure that rows of `X` are sorted correctly or shuffled. Parameter `scale` allows to standardize your data prior to the generation, which is useful if your variables have different nature and/or units. The generated data will be unscaled though.
+Here `X` is your calibration set (as a numerical matrix), `ncomp` is a number of principal components for PCA decomposition (use at lease enough to explain 95-99% of variation of the data values), `nseg` is the number of segments for cross-validation procedure. So far only systematic cross-validation (venetian blinds) is supported, so make sure that rows of `X` are sorted correctly or shuffled. Parameter `scale` allows to standardize your data prior to the generation, which is useful if your variables have different nature and/or units. The generated data will be unscaled though.
 
 File `demo.R` contains a demo code based on *NIRSim* dataset from the paper. See comments in the code for more details.
 
