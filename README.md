@@ -1,6 +1,6 @@
 # Procrustes cross-validation
 
-This repository contains implementation of Procrustes cross-validation in R and MATLAB. The current version of code is *0.1.1*. The code can be also downloaded as archive from [Release](https://github.com/svkucheryavski/pcv/releases) section.
+This repository contains implementation of Procrustes cross-validation in R and MATLAB. The current version of the code is *0.1.1*. The code can also be downloaded as zip archive from [Release](https://github.com/svkucheryavski/pcv/releases) section.
 
 ## Short description
 
@@ -38,6 +38,6 @@ pvset = pcv(X, nComp, nSeg, Scale);
 
 File `demo.m` contains a demo code based on *NIRSim* dataset from the paper. See comments in the code for more details.
 
-### Bugs and improvements
+## Bugs and improvements
 
-We plan to improve and extend the code gradually. If you found a bug please report using issues or send an email.
+The code will be improved and extended gradually. If you found a bug please report using issues or send an email.
