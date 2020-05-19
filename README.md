@@ -14,7 +14,7 @@ Procrustes cross-validation is a new approach for validation of chemometric mode
     * rows from the current segment are rotated in original variable space by the angle
 4. All rotated measurements are then combined into a matrix with pseudo-validation set
 
-So, pseudo-validation set is built on top of the calibration set but has its own sampling error. Since it is not independent from the calibration set we recommend to limit its use by model optimization and do not use it for assessment of performance of the final model. More details can be found in our [preprint](), the paper is currently under review in one of the scientific journals.
+So, pseudo-validation set is built on top of the calibration set but has its own sampling error. Since it is not independent from the calibration set we recommend to limit its use by model optimization and do not use it for assessment of performance of the final model. More details can be found in our [preprint](https://chemrxiv.org/account/articles/12327803), the paper is currently under review in one of the peer-reviewed journals.
 
 ## How to use in R
 
