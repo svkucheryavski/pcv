@@ -2,6 +2,14 @@
 
 This repository contains implementation of Procrustes cross-validation in R and MATLAB. The current version of the code is *0.1.1*. The code can also be downloaded as zip archive from [Release](https://github.com/svkucheryavski/pcv/releases) section.
 
+## Reference
+
+You can find detailed description of the method with numerous examples in this paper:
+
+Kucheryavskiy, S., Zhilin, S., Rodionova, O., & Pomerantsev, A. *Procrustes Cross-Validation—A Bridge between Cross-Validation and Independent Validation Sets.* Analytical Chemistry,  92 (17), 2020. pp.11842–11850. DOI: [10.1021/acs.analchem.0c02175](https://doi.org/10.1021/acs.analchem.0c02175)
+
+Please cite this paper if you use this method in your research.
+
 ## Short description
 
 Procrustes cross-validation is a new approach for validation of chemometric models. It makes possible to generate a new dataset, named *pseudo-validation set* and use it for validation of models in the same way as with an independent test set. The generation is done using following algorithm:
@@ -14,7 +22,7 @@ Procrustes cross-validation is a new approach for validation of chemometric mode
     * rows from the current segment are rotated in original variable space by the angle
 4. All rotated measurements are then combined into a matrix with pseudo-validation set
 
-So, pseudo-validation set is built on top of the calibration set but has its own sampling error. Since it is not independent from the calibration set we recommend to limit its use by model optimization and do not use it for assessment of performance of the final model. More details can be found in our [preprint](https://chemrxiv.org/account/articles/12327803), the paper is currently under review in one of the peer-reviewed journals.
+So, pseudo-validation set is built on top of the calibration set but has its own sampling error. Since it is not independent from the calibration set we recommend to limit its use by model optimization and do not use it for assessment of performance of the final model.
 
 ## How to use in R
 
