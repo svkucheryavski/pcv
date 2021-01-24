@@ -10,6 +10,11 @@ Kucheryavskiy, S., Zhilin, S., Rodionova, O., & Pomerantsev, A. *Procrustes Cros
 
 Please cite this paper if you use this method in your research.
 
+The next paper shows applicability and efficiency of the proposed method in case of short datasets:
+
+Pomerantsev A. L., Rodionova O. Ye. *Procrustes Cross-Validation of short datasets in PCA context.*
+Talanta, 226, 2021. DOI: [10.1016/j.talanta.2021.122104](https://doi.org/10.1016/j.talanta.2021.122104)
+
 ## Short description
 
 Procrustes cross-validation is a new approach for validation of chemometric models. It makes possible to generate a new dataset, named *pseudo-validation set* and use it for validation of models in the same way as with an independent test set. The generation is done using following algorithm:
