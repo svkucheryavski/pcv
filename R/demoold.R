@@ -8,7 +8,7 @@
 
 library(mdatools)
 rm(list = ls())
-source("pcv.R")
+source("pcvold.R")
 
 # load original spectra
 load("nirsim.RData")
@@ -31,4 +31,5 @@ res_pv <- predict(m, spectra_pv)
 par(mfrow = c(1, 2))
 plotExtreme(m, res = m$res$cal, comp = 4, main = "Extreme (cal)")
 plotExtreme(m, res = res_pv, comp = 4, main = "Extreme (pv)")
+
 

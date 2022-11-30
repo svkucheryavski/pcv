@@ -1,6 +1,6 @@
 # Simple tests for the PCV R implementation
 rm(list = ls())
-source("pcv.R")
+source("pcvold.R")
 I <- 100
 J <- 50
 A <- 10
