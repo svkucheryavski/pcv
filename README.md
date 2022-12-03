@@ -1,6 +1,8 @@
 # Procrustes cross-validation
 
-<img src="logo.png" width="75" height="75" style="float:left;padding-right:10px;">Procrustes cross-validation (PCV) is a new approach for validation of chemometric models. It generates a new dataset, named *PV-set*, which can be used for validation of PCA/SIMCA/PCR/PLS models in the same way as with an independent validation set.
+
+<img src="logo.png" width="75" height="75" align="left" style="padding-right:10px;">
+Procrustes cross-validation (PCV) is a new approach for validation of chemometric models. It generates a new dataset, named *PV-set*, which can be used for validation of PCA/SIMCA/PCR/PLS models in the same way as with an independent validation set.
 
 This repository contains source code with implementation of Procrustes cross-validation for R and MATLAB as well as some practical details. There are two versions of the method:
 
