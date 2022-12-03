@@ -1,18 +1,26 @@
-% Compute matrix with pseudo-validation set
+function Xpv = pcv(X, nComp, nSeg, Scale)
+%PCV Compute matrix with pseudo-validation set
 %
-% Arguments
-% ---------
+% Arguments:
+% ----------
 % X         matrix with calibration set (IxJ)
 % nComp     number of components for PCA decomposition
 % nSeg      number of segments for cross-validation
 % Scale     logical, standardize columns of X prior to decompositon or not
 %
+% Returns:
+% --------
+% Xpv       matrix with PV-set (same size as X)
+%
+% This is the old version of the algorithm for PCA decomposition. Use the
+% new version instead (pcvpca).
+%
 % The method computes pseudo-validation matrix Xpv, based on PCA decomposition of calibration set X
 % and systematic (venetian blinds) cross-validation. It is assumed that data rows are ordered
 % correctly, so systematic cross-validation can be applied
 %
-function Xpv = pcv(X, nComp, nSeg, Scale)
-
+% See also: PCVPCA, PCVPCR, PCVPLS
+%
    nRows = size(X, 1);
    nCols = size(X, 2);
 
