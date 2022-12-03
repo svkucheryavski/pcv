@@ -1,0 +1,16 @@
+Package: pcv
+Title: Procrustes cross-validation
+Version: 1.0.0
+Date: 2022-12-02
+Author: Sergey Kucheryavskiy (<https://orcid.org/0000-0002-3145-7244>)
+Maintainer: Sergey Kucheryavskiy <svkucheryavski@gmail.com>
+Description: Procrustes cross-validation of chemometric models.
+    S. Kucheryavskiy (2020) <doi: 10.1016/j.chemolab.2020.103937>.
+Encoding: UTF-8
+License: MIT + file LICENSE
+Imports: graphics, grDevices, stats
+RoxygenNote: 7.2.1
+Suggests: testthat
+NeedsCompilation: no
+Packaged: 2022-12-02 11:03:33 UTC; svkucheryavski
+Depends: R (>= 3.5.0)

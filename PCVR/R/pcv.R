@@ -9,13 +9,18 @@
 #' @param scale
 #' logical, standardize columns of X prior to decompositon or not
 #'
-#' @description
+#' @details
+#' This is the old (original) version of PCV algorithm for PCA models. Use \code{\link{pcvpca}}
+#' instead. Ane check project web-site for details: https://github.com/svkucheryavski/pcv
+#'
 #' The method computes pseudo-validation matrix Xpv, based on PCA decomposition of calibration set X
 #' and systematic (venetian blinds) cross-validation. It is assumed that data rows are ordered
 #' correctly, so systematic cross-validation can be applied
 #'
 #' @return
 #' Pseudo-validation matrix (IxJ)
+#'
+#' @importFrom stats sd
 #'
 #' @export
 pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20), nseg = 4, scale = FALSE) {
@@ -106,7 +111,7 @@ getR <- function(base1, base2) {
       Rs <- getR(base1_rs, base2_rs)
 
       # Construct rotation matrix of the whole space (recall x1)
-      M <- eye(nr)
+      M <- diag(1, nr)
       M[2:nr, 2:nr] <- Rs
 
       R <- crossprod(R2, (M %*% R1))
@@ -124,10 +129,10 @@ getR <- function(base1, base2) {
 #' Rotation matrix (JxJ)
 rotationMatrixToX1 <- function(x) {
    N <- length(x)
-   R <- eye(N)
+   R <- diag(1, N)
    step <- 1
    while (step < N) {
-      A <- eye(N)
+      A <- diag(1, N)
       n <- 1
       while (n <= N - step) {
          r2 <- x[n]^2 + x[n + step]^2
@@ -150,18 +155,4 @@ rotationMatrixToX1 <- function(x) {
 }
 
 
-#' Create the identity matrix
-#'
-#' @param n
-#' Size of the matrix
-#'
-#' @return
-#' The identity matrix (n x n)
-#'
-#' @export
-eye <- function(n) {
-   X <- matrix(0, n, n)
-   diag(X) <- 1
-   return(X)
-}
 
