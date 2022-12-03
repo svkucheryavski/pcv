@@ -18,7 +18,7 @@
 function ind = crossval(CV, nObj, Y) 
    
    % if user already provided vector with values - return it
-   if isa(CV, "double") && numel(CV) == nObj
+   if isa(CV, 'double') && numel(CV) == nObj
       ind = CV;
       return;
    end   
@@ -28,7 +28,7 @@ function ind = crossval(CV, nObj, Y)
 
    % check number of segments
    if p{2} < 2 || p{2} > nObj
-      error("Wrong value for number of segments (should be between 2 and number of objects).")
+      error('Wrong value for number of segments (should be between 2 and number of objects).')
    end
 
    % leave-one-out
@@ -65,7 +65,7 @@ end
 function params = getcvparams(CV, nObj)
 
    % a number - random split
-   if isa(CV, "double")
+   if isa(CV, 'double')
       params = {"rand", (CV == 1) * nObj + (CV > 1) * CV};
       return;
    end

@@ -45,7 +45,7 @@ function [Xpv, D] = pcvpcr(X, Y, nComp, Center, Scale, CV)
          Pi = eye(size(X, 2)) - P * P';
          T = X * P;
          C = (T' * T)' \ (T' * Y);
-         m = struct(P = P, C = C, Pi = Pi, nComp = nComp);
+         m = struct('P', P, 'C', C, 'Pi',  Pi, 'nComp', nComp);
     end
 
     % computes a local PCR model
@@ -57,7 +57,7 @@ function [Xpv, D] = pcvpcr(X, Y, nComp, Center, Scale, CV)
          Tc = Xc * Pk;
          Ck = (Tc' * Tc)' \ (Tc' * Yc);
 
-         mk = struct(P = Pk, C = Ck); 
+         mk = struct('P', Pk, 'C', Ck); 
     end
 
     % computes PV-set for current segment
@@ -75,10 +75,10 @@ function [Xpv, D] = pcvpcr(X, Y, nComp, Center, Scale, CV)
     end
     
     funlist = struct(...
-        getglobalmodel = @getglobalmodel, ...
-        getlocalmodel = @getlocalmodel,...
-        getxpv = @getxpv,...
-        getqk = @getqk...
+        'getglobalmodel', @getglobalmodel, ...
+        'getlocalmodel', @getlocalmodel,...
+        'getxpv', @getxpv,...
+        'getqk', @getqk...
     );
 
     [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist);

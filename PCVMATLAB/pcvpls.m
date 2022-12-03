@@ -42,7 +42,7 @@ function [Xpv, D] = pcvpls(X, Y, nComp, Center, Scale, CV)
    function m = getglobalmodel(X, Y, nComp)
       [P, R, C] = simpls(X, Y, nComp);
       Pi = eye(size(X, 2)) - R * P';
-      m = struct(P = P, R = R, C = C, Pi = Pi, nComp = nComp);
+      m = struct('P', P, 'R', R, 'C', C, 'Pi', Pi, 'nComp', nComp);
    end
 
    % computes a local PLS model
@@ -55,7 +55,7 @@ function [Xpv, D] = pcvpls(X, Y, nComp, Center, Scale, CV)
       Rk = Rk * diag(aa * 2 - 1);
       Ck = Ck * diag(aa * 2 - 1);
 
-      mk = struct(P = Pk, R = Rk, C = Ck);
+      mk = struct('P', Pk, 'R', Rk, 'C', Ck);
    end
 
    % computes PV-set for current segment
@@ -75,10 +75,10 @@ function [Xpv, D] = pcvpls(X, Y, nComp, Center, Scale, CV)
    end
 
    funlist = struct(...
-      getglobalmodel = @getglobalmodel, ...
-      getlocalmodel = @getlocalmodel,...
-      getxpv = @getxpv,...
-      getqk = @getqk...
+      'getglobalmodel', @getglobalmodel, ...
+      'getlocalmodel', @getlocalmodel,...
+      'getxpv', @getxpv,...
+      'getqk', @getqk...
       );
 
    [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist);
