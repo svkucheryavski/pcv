@@ -13,6 +13,9 @@ getxpvorth(q.k, X.k, PRM)
 
 \item{PRM}{projecton matrix for orthogonalization of residuals}
 }
+\value{
+A matrix with orthogonal part for Xpv
+}
 \description{
 Generates the orthogonal part for Xpv
 }

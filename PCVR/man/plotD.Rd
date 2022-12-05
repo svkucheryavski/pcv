@@ -26,6 +26,9 @@ plotD(
 
 \item{...}{any other parameters for method `image`}
 }
+\value{
+No return value, just creates a plot.
+}
 \description{
 Plots heatmap for scaling coefficients obtained when generating PV-set for PCR or PLS
 }
