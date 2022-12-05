@@ -6,6 +6,9 @@
 #' @param PRM
 #' projecton matrix for orthogonalization of residuals
 #'
+#' @return
+#' A matrix with orthogonal part for Xpv
+#'
 #' @importFrom stats runif
 #'
 #' @export

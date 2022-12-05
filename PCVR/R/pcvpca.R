@@ -45,17 +45,18 @@
 #'
 #' # load NIR spectra of Corn samples
 #' data(corn)
-#' X = corn$spectra
+#' X <- corn$spectra
 #'
 #' # generate Xpv set based on PCA decomposition with A = 20 and venetian blinds split with 4 segments
-#' Xpv = pcvpca(X, ncomp = 20, center = TRUE, scale = FALSE, cv = list("ven", 4))
+#' Xpv <- pcvpca(X, ncomp = 20, center = TRUE, scale = FALSE, cv = list("ven", 4))
 #'
 #' # show the original spectra and the PV-set (as is and mean centered)
-#' par(mfrow = c(2, 2))
+#' oldpar <- par(mfrow = c(2, 2))
 #' matplot(t(X), type = "l", lty = 1, main = "Original data")
 #' matplot(t(Xpv), type = "l", lty = 1, main = "PV-set")
 #' matplot(t(scale(X, scale = FALSE)), type = "l", lty = 1, main = "Original data (mean centered)")
 #' matplot(t(scale(Xpv, scale = FALSE)), type = "l", lty = 1, main = "PV-set (mean centered)")
+#' par(oldpar)
 #'
 #' @importFrom stats sd
 #'

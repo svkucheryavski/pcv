@@ -13,6 +13,9 @@
 #' @param ...
 #' any other parameters for method `image`
 #'
+#' @return
+#' No return value, just creates a plot.
+#'
 #' @importFrom graphics image
 #' @importFrom grDevices colorRampPalette
 #'
