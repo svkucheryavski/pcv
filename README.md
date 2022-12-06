@@ -14,7 +14,7 @@ Some practical details about how to use PCV are given below.
 
 ## How to use PCV in R
 
-We created a dedicated package, `pcv`, which contains all PCV functions. You can download the package file from [Releases](https://github.com/svkucheryavski/pcv/releases) and install from the file. The package is currently under review in CRAN and as soon as it is accepted you will be also able install the package from CRAN by running `install.packages("pcv")`.
+We have created a dedicated R package, `pcv`, which contains all PCV functions, you can install it directly from CRAN by running `install.packages("pcv")`. You can also download the package file from [Releases](https://github.com/svkucheryavski/pcv/releases) and install from the file.
 
 There are four main functions in the package:
 
