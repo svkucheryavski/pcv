@@ -123,7 +123,11 @@ test_that("- pcvpcr() works well for Corn data.", {
    X <- corn$spectra
    Y <- corn$moisture
 
-   Xpv <- pcvpcr(X, Y, 20, center = TRUE, scale = FALSE, cv = list("ven", 4))
+   # because of error in ordering of CV values (fixed now) we have to provide
+   # manual vector in this test
+   cv = rep(seq_len(4), length.out = nrow(X))[order(Y)]
+
+   Xpv <- pcvpcr(X, Y, 20, center = TRUE, scale = FALSE, cv = cv)
    D <- attr(Xpv, "D")
 
    expect_equal(nrow(Xpv), nrow(X))
@@ -192,7 +196,10 @@ test_that("- pcvpls() works well for Corn data.", {
    X <- corn$spectra
    Y <- corn$moisture
 
-   Xpv <- pcvpls(X, Y, 20, center = TRUE, scale = FALSE, cv = list("ven", 4))
+   # because of error in ordering of CV values (fixed now) we have to provide
+   # manual vector in this test
+   cv = rep(seq_len(4), length.out = nrow(X))[order(Y)]
+   Xpv <- pcvpls(X, Y, 20, center = TRUE, scale = FALSE, cv = cv)
    D <- attr(Xpv, "D")
 
    expect_equal(nrow(Xpv), nrow(X))

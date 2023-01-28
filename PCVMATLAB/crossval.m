@@ -6,22 +6,22 @@
 % nObj      number of objects (rows) in training set
 % Y         matrix or vector with response values (needed for "ven" splits)
 %
-% The method computes vector with segment number for each row. The 'CV' 
+% The method computes vector with segment number for each row. The 'CV'
 % parameter can be one of the follows:
-% 
+%
 % 'CV = 1' - full cross-validation (leave one out)
 % 'CV = n' - random cross-validation with n segments
 % 'CV = {"rand", n}' - random cross-validation with n segments
 % 'CV = {"ven", n}' - systematic cross-validation with n segments
 % 'CV = {"loo"}' - full cross-validation (leave one out)
 %
-function ind = crossval(CV, nObj, Y) 
-   
+function ind = crossval(CV, nObj, Y)
+
    % if user already provided vector with values - return it
    if isa(CV, 'double') && numel(CV) == nObj
       ind = CV;
       return;
-   end   
+   end
 
    % check and process CV parameters
    p = getcvparams(CV, nObj);
@@ -38,16 +38,17 @@ function ind = crossval(CV, nObj, Y)
    end
 
    nSeg = p{2};
-   nMax = ceil(nObj / nSeg); 
+   nMax = ceil(nObj / nSeg);
    ind = repmat(1:nSeg, 1, nMax);
    ind = ind(1:nObj)';
-   
+
    % systematic
    if p{1} == "ven"
       if nargin < 3
          return;
-      end   
+      end
       [~, rowInd] = sort(Y(:, 1));
+      [~, rowInd] = sort(rowInd);
       ind = ind(rowInd);
       return;
    end
@@ -56,7 +57,7 @@ function ind = crossval(CV, nObj, Y)
    if p{1} == "rand"
       ind = ind(randperm(numel(ind)));
       return;
-   end   
+   end
 
    error("Something went wrong.");
 end
@@ -76,7 +77,7 @@ function params = getcvparams(CV, nObj)
    if type == "loo"
       params = {"loo", nObj};
       return;
-   end   
+   end
 
    % venetian blinds
    if type == "ven" || type == "rand"

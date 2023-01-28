@@ -67,7 +67,7 @@ pcvcrossval <- function(cv = 1, nobj = NULL, resp = NULL) {
    }
 
    if (p$type == "ven") {
-      ind <- if (is.null(resp)) seq_len(nobj) else order(resp)
+      ind <- if (is.null(resp)) seq_len(nobj) else order(order(resp))
       return(matrix(rep(seq_len(p$nseg), length.out = nobj)[ind], ncol = 1))
    }
 
