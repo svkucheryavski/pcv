@@ -8,7 +8,7 @@ This repository contains source code with implementation of Procrustes cross-val
 
 1. The *original* version was created in 2020. It is based on rotations in variable space, is a bit slow, and works only for PCA/SIMCA models. Paper [1] in References section below describes the original method and paper [2] shows some practical examples of its use for SIMCA classification.
 
-2. The *new* version was created in 2022 as a generalization of the original approach. The new version is much faster and can also work with regression models (e.g. PCR, PLS1, PLS2). Paper [3] describes the new method, however currently the paper is under peer-review in a journal, we will update the information when it is out.
+2. The *new* version was created in 2022 as a generalization of the original approach. The new version is much faster and can also work with regression models (e.g. PCR, PLS1, PLS2). Paper [3] describes the new method.
 
 Some practical details about how to use PCV are given below.
 
@@ -113,7 +113,7 @@ Papers [1] and [2] describe the original version, paper [3] — the new version.
 
 2. Pomerantsev A. L., Rodionova O. Ye. *Procrustes Cross-Validation of short datasets in PCA context.* Talanta, 226, 2021. DOI: [10.1016/j.talanta.2021.122104](https://doi.org/10.1016/j.talanta.2021.122104)
 
-3. Kucheryavskiy S., Rodionova, O., & Pomerantsev, A. *Procrustes Cross-Validation of multivariate regression model*. Submitted, 2022.
+3. Kucheryavskiy S., Rodionova, O., & Pomerantsev, A. *Procrustes Cross-Validation of multivariate regression model*. Analytica Chimica Acta, 1255, 2022 [10.1016/j.aca.2023.341096](https://doi.org/10.1016/j.aca.2023.341096).
 
 
 ## Bugs and improvements
