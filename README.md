@@ -113,7 +113,7 @@ Papers [1] and [2] describe the original version, paper [3] — the new version.
 
 2. Pomerantsev A. L., Rodionova O. Ye. *Procrustes Cross-Validation of short datasets in PCA context.* Talanta, 226, 2021. DOI: [10.1016/j.talanta.2021.122104](https://doi.org/10.1016/j.talanta.2021.122104)
 
-3. Kucheryavskiy S., Rodionova, O., & Pomerantsev, A. *Procrustes Cross-Validation of multivariate regression model*. Analytica Chimica Acta, 1255, 2022 [10.1016/j.aca.2023.341096](https://doi.org/10.1016/j.aca.2023.341096).
+3. Kucheryavskiy S., Rodionova, O., & Pomerantsev, A. *Procrustes Cross-Validation of multivariate regression model*. Analytica Chimica Acta, 1255, 2023 [10.1016/j.aca.2023.341096](https://doi.org/10.1016/j.aca.2023.341096).
 
 
 ## Bugs and improvements
