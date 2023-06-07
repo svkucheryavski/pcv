@@ -66,7 +66,8 @@
 #' plotD(Xpv)
 #'
 #' @export
-pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, scale = FALSE, cv = list("ven", 4)) {
+pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, scale = FALSE,
+   cv = list("ven", 4), cv.scope = "global") {
 
    funlist <- list(
 
@@ -77,7 +78,7 @@ pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, s
          P <- m$P
          C <- m$C
          R <- m$R
-         
+
          Pi <- (diag(1, ncol(X)) - tcrossprod(R, P))
          return(list(P = P, Pi = Pi, C = C, R = R, ncomp = ncomp))
       },
@@ -119,11 +120,11 @@ pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, s
          for (a in seq_len(m$ncomp)) {
             D.k[a, a] <- as.numeric(crossprod(C.k[, a], C[, a])) / as.numeric(crossprod(C[, a]))
          }
-         
+
          T.pv <- T.k %*% D.k
          X.pv <- tcrossprod(T.pv, P)
 
-         return(list(X = X.pv, D = D.k))
+         return(list(X = X.pv, D = D.k, R = R.k))
       },
 
       # computes the vector with orthogonal distances for local model
@@ -133,7 +134,7 @@ pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, s
       }
    )
 
-   return(pcvreg(X, Y, ncomp, cv = cv, center = center, scale = scale, funlist = funlist))
+   return(pcvreg(X, Y, ncomp, cv = cv, center = center, scale = scale, funlist = funlist, cv.scope = cv.scope))
 }
 
 

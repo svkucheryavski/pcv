@@ -3,11 +3,11 @@
 ####################################
 
 setup({
-   pdf(file = tempfile("mdatools-test-classmodel-", fileext = ".pdf"))
+   #pdf(file = tempfile("mdatools-test-classmodel-", fileext = ".pdf"))
 })
 
 teardown({
-   dev.off()
+   #dev.off()
 })
 
 context("Tests for 'pcvpca()':")
@@ -191,7 +191,7 @@ test_that("- pcvpls() works well for random data.", {
    }
 })
 
-test_that("- pcvpls() works well for Corn data.", {
+test_that("- pcvpls() works well for Corn data with global CV scope.", {
    data(corn)
    X <- corn$spectra
    Y <- corn$moisture
@@ -210,6 +210,54 @@ test_that("- pcvpls() works well for Corn data.", {
    expect_true(min(D) > 0.0)
    expect_true(max(D) < 1.5)
    expect_true(all(D[, 4] > 1.1))
-
    expect_silent(plotD(Xpv))
+})
+
+test_that("- pcvpls() works well for Corn data with local CV scope.", {
+   data(corn)
+   X <- corn$spectra
+   Y <- corn$moisture
+
+   # because of error in ordering of CV values (fixed now) we have to provide
+   # manual vector in this test
+   cv = rep(seq_len(4), length.out = nrow(X))[order(Y)]
+   Xpv <- pcvpls(X, Y, 20, center = TRUE, scale = FALSE, cv = cv, cv.scope = "local")
+   D <- attr(Xpv, "D")
+
+   mdatools::mdaplot(Xpv, type = "l")
+   plotD(Xpv)
+   expect_equal(nrow(Xpv), nrow(X))
+   expect_equal(ncol(Xpv), ncol(X))
+   expect_false(is.null(D))
+   expect_equal(ncol(D), 20)
+   expect_equal(nrow(D), 4)
+   expect_true(min(D) > 0.0)
+   expect_true(max(D) < 1.5)
+   expect_true(all(D[, 4] > 1.1))
+   expect_silent(plotD(Xpv))
+})
+
+test_that("- pcvpls() compare local and global CV scope.", {
+   data(corn)
+   X <- corn$spectra
+   Y <- corn$moisture
+
+   cv = list("ven", 10)
+   Xpv1 <- pcvpls(X, Y, 20, center = TRUE, scale = FALSE, cv = cv, cv.scope = "global")
+   Xpv2 <- pcvpls(X, Y, 20, center = TRUE, scale = FALSE, cv = cv, cv.scope = "local")
+
+   par(mfrow = c(2, 2))
+   mdatools::mdaplot(Xpv1, type = "l", cgroup = Y[, 1])
+   mdatools::mdaplot(Xpv2, type = "l", cgroup = Y[, 1])
+   plotD(Xpv1)
+   plotD(Xpv2)
+
+   m11 = mdatools::pls(X, Y, 20, cv = cv, cv.scope = "global")
+   m21 = mdatools::pls(X, Y, 20, cv = cv, cv.scope = "local")
+   m12 = mdatools::pls(X, Y, 20, x.test = Xpv1, y.test = Y, cv.scope = "global")
+   m22 = mdatools::pls(X, Y, 20, x.test = Xpv2, y.test = Y, cv.scope = "local")
+
+   expect_equivalent(m11$res$cv$rmse, m12$res$test$rmse)
+   expect_equivalent(m21$res$cv$rmse, m22$res$test$rmse, tolerance = 0.01)
+
 })
