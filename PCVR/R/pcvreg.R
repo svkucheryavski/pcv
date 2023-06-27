@@ -53,6 +53,9 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
    Xpv <- matrix(0, nrow(X), ncol(X))
    D <- matrix(0, nseg, ncomp)
 
+   # this will be used only for PLS case
+   R <- array(0, dim = c(nseg, ncol(X), ncomp))
+
    # do autoscaling and compute global model depending on CV scope
    if (cv.scope == "global") {
       X <- scale(X, center = mXg, scale = sXg)
@@ -93,6 +96,9 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
       Xpv.hat <- pvres$X
       D[k, ] <- diag(pvres$D)
 
+      # in case of PLS regression we save R as well
+      if (!is.null(pvres$R)) R[k, , ] <- pvres$R
+
       # compute the orthogonal part of PV-set
       Xpv.orth <- getxpvorth(funlist$getqk(X.k, m.k), X.k, m$Pi)
 
@@ -117,6 +123,12 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
 
    # add additional attribute with diagonal elements
    attr(Xpv, "D") <- D
+
+   # in case of PLS regression we save R as well
+   if (!is.null(pvres$R)) {
+      attr(Xpv, "Rk") <- R
+      attr(Xpv, "R") <- m$R
+   }
 
    return(Xpv)
 }

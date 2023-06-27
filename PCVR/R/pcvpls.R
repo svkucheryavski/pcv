@@ -12,6 +12,9 @@
 #' logical, to scale or not the data sets
 #' @param cv
 #' which split method to use for cross-validation (see description for details).
+#' @param cv.scope
+#' scope for center/scale operations inside CV loop: 'global' — using globally computed mean and std
+#' or 'local' — recompute new for each local calibration set.
 #'
 #' @details
 #' The method computes pseudo-validation matrix Xpv, based on PLS decomposition of calibration
@@ -35,6 +38,12 @@
 #' specify which segment a particular row will belong to. In case of the example shown here, it
 #' is assumed that you have 9 rows in the calibration set, which will be split into 3 segments.
 #' The first segment will consist of measurements from rows 1, 4 and 7.
+#'
+#' Parameter `cv.scope` influences how the Procrustean rule is met. In case of "global" scope,
+#' the rule will be met strictly - error of predictions for PV-set and the global model will be
+#' identical to the error from conventional cross-validation. In case of "local" scope, every
+#' local model will have its own center and hence the rule will be almost met (the errors will
+#' be close but not identical).
 #'
 #' @return
 #' Pseudo-validation matrix (same size as X) with an additional attribute, `D` which contains the
