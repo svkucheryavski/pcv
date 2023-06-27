@@ -1,6 +1,6 @@
 Package: pcv
 Version: 1.1.0
-Date: 2023-06-20
+Date: 2023-07-10
 Title: Procrustes Cross-Validation
 Authors@R: c(person("Sergey", "Kucheryavskiy", role = c("aut", "cre"), email="svkucheryavski@gmail.com", comment = c(ORCID = "0000-0002-3145-7244")))
 Maintainer: Sergey Kucheryavskiy <svkucheryavski@gmail.com>
