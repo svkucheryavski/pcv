@@ -14,6 +14,9 @@
 #' which split method to use for cross-validation (see description of method `pcvpls()` for details).
 #' @param funlist
 #' list with functions for particular implementatio
+#' @param cv.scope
+#' scope for center/scale operations inside CV loop: 'global' — using globally computed mean and std
+#' or 'local' — recompute new for each local calibration set.
 #'
 #' @description
 #' This is a generic method, use `pcvpls()` or `pcvpcr()` instead.

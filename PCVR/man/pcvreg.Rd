@@ -11,7 +11,8 @@ pcvreg(
   cv = list("ven", 4),
   center = TRUE,
   scale = FALSE,
-  funlist = list()
+  funlist = list(),
+  cv.scope = "global"
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ pcvreg(
 \item{scale}{logical, to scale or not the data sets}
 
 \item{funlist}{list with functions for particular implementatio}
+
+\item{cv.scope}{scope for center/scale operations inside CV loop: 'global' — using globally computed mean and std
+or 'local' — recompute new for each local calibration set.}
 }
 \description{
 This is a generic method, use `pcvpls()` or `pcvpcr()` instead.

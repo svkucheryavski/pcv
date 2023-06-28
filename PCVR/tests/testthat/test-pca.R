@@ -312,29 +312,28 @@ test_that("- pcvpca() works well for Corn data and both global and local scope."
    expect_equivalent(rcv.g$Q, rpv.g$Q)
 
    # do PCA and get PV results from there
-   m <- mdatools::pca(X, 20, center = TRUE, scale = FALSE)
-   r.l <- predict(m, Xpv.l)
-   r.g <- predict(m, Xpv.g)
+   #m <- mdatools::pca(X, 20, center = TRUE, scale = FALSE)
+   #r.l <- predict(m, Xpv.l)
+   #r.g <- predict(m, Xpv.g)
 
    # show plots
    par(mfrow = c(3, 2))
 
    # distance plots for local results
-   mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.l), ncomp =  2)
-   points(rcv.l$H[, 2], rcv.l$Q[, 2], pch = 4)
-   mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.l), ncomp = 10)
-   points(rcv.l$H[, 10], rcv.l$Q[, 10], pch = 4)
+   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.l), ncomp =  2)
+   #points(rcv.l$H[, 2], rcv.l$Q[, 2], pch = 4)
+   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.l), ncomp = 10)
+   #points(rcv.l$H[, 10], rcv.l$Q[, 10], pch = 4)
 
    # distance plots for global results
-   mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.g), ncomp =  2)
-   points(rcv.g$H[, 2], rcv.g$Q[, 2], pch = 4)
-   mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.g), ncomp = 10)
-   points(rcv.g$H[, 10], rcv.g$Q[, 10], pch = 4)
+   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.g), ncomp =  2)
+   #points(rcv.g$H[, 2], rcv.g$Q[, 2], pch = 4)
+   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.g), ncomp = 10)
+   #points(rcv.g$H[, 10], rcv.g$Q[, 10], pch = 4)
 
    # line plots with PV-sets
-   mdatools::mdaplot(mdatools::prep.autoscale(Xpv.l), type = "l")
-   mdatools::mdaplot(mdatools::prep.autoscale(Xpv.g), type = "l")
-
+   #mdatools::mdaplot(mdatools::prep.autoscale(Xpv.l), type = "l")
+   #mdatools::mdaplot(mdatools::prep.autoscale(Xpv.g), type = "l")
 
 })
 

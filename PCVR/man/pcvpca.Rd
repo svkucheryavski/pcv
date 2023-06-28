@@ -6,10 +6,11 @@
 \usage{
 pcvpca(
   X,
-  ncomp = min(nrow(X) - 1, col(X), 30),
+  ncomp = min(nrow(X) - 1, ncol(X), 30),
   cv = list("ven", 4),
   center = TRUE,
-  scale = FALSE
+  scale = FALSE,
+  cv.scope = "global"
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ pcvpca(
 \item{center}{logical, to center or not the data sets}
 
 \item{scale}{logical, to scale or not the data sets}
+
+\item{cv.scope}{scope for center/scale operations inside CV loop: 'global' — using globally computed mean and std
+or 'local' — recompute new for each local calibration set.}
 }
 \value{
 Matrix with PV-set (same size as X)
@@ -51,6 +55,12 @@ of values in this vector must be the same as number of rows in the training set.
 specify which segment a particular row will belong to. In case of the example shown here, it
 is assumed that you have 9 rows in the calibration set, which will be split into 3 segments.
 The first segment will consist of measurements from rows 1, 4 and 7.
+
+Parameter `cv.scope` influences how the Procrustean rule is met. In case of "global" scope,
+the rule will be met strictly - error of predictions for PV-set and the global model will be
+identical to the error from conventional cross-validation. In case of "local" scope, every
+local model will have its own center and scaling factor and hence the rule will be almost
+met (the errors will be close but not identical).
 }
 \examples{
 
