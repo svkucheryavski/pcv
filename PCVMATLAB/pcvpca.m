@@ -1,4 +1,4 @@
-function Xpv = pcvpca(X, nComp, Center, Scale, CV)
+function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
 %PCVPCA Compute matrix with pseudo-validation set for PCA/SIMCA model
 %
 % Arguments:
@@ -8,6 +8,8 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV)
 % Center    logical, mean center data columns or not
 % Scale     logical, standardize data columns or not
 % CV        defines cross-validation splits pattern (see description)
+% CVScope   defines if centering/scaling must be done globally ('global')
+% or locally ('local'). Default value is 'global'.
 %
 % Returns:
 % --------
@@ -39,6 +41,10 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV)
    nCols = size(X, 2);
 
    % default values
+   if nargin < 6
+      CVScope = "global";
+   end
+   
    if nargin < 5
        CV = {"ven", 4};
    end
@@ -76,13 +82,11 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV)
       sX = ones(1, nCols);
    end
 
-   % autoscale the calibration set
-   X = bsxfun(@minus, X, mX);
-   X = bsxfun(@rdivide, X, sX);
-
+   % autoscale data globally
+   X = (X - mX) ./ sX;
+   
    % create a global model
-   [~, ~, P] = svd(X, 'econ');
-   P = P(:, 1:nComp);
+   [~, ~, P] = svds(X, nComp);
    Pi = eye(nCols) - P * P';
 
    % prepare empty matrix for pseudo-validation set
@@ -97,10 +101,17 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV)
 
       Xk = X(indk, :);
       Xc = X(indc, :);
-
+      
+      % compute mean and standard deviation and autoscale locally in case of local scope
+      if CVScope == "local"
+         if Center, mXl = mean(Xc); else, mXl = zeros(1, nCols); end
+         if Scale, sXl = std(Xc); else, sXl = ones(1, nCols); end
+         Xc = (Xc - mXl) ./ sXl;
+         Xk = (Xk - mXl) ./ sXl;
+      end
+      
       % get loadings for local model and rotation matrix between global and local models
-      [~, ~, Pk] = svd(Xc, 'econ');
-      Pk = Pk(:, 1:nComp);
+      [~, ~, Pk] = svds(Xc, nComp);
 
       % correct direction of loadings for local model
       a = acos(sum(P .* Pk)) < pi / 2;
@@ -109,19 +120,17 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV)
       % compute explained part of Xpv
       Tk = Xk * Pk;
       Xpvpar = Tk * P';
-
+            
       % compute orthogonal part of Xpv
       Ek = Xk - Tk * Pk';
       qk = sum(Ek.^2, 2);
       Xpvorth = getxpvorth(qk, Xk, Pi);
 
-
       % rotate the local validation set and save as a part of Xpv
-      Xpv(indk, :) = Xpvorth + Xpvpar;
+      Xpv(indk, :) = Xpvorth + Xpvpar;      
    end
 
    % uscenter and unscale the data
-   Xpv = bsxfun(@times, Xpv, sX);
-   Xpv = bsxfun(@plus, Xpv, mX);
+   Xpv = Xpv .* sX + mX;
 end
 
