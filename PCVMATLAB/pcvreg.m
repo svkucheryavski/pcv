@@ -1,4 +1,5 @@
-% Compute matrix with pseudo-validation set for Regression model
+function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
+%PCVREG Compute matrix with pseudo-validation set for Regression model
 %
 % Arguments
 % ---------
@@ -8,10 +9,11 @@
 % Center    logical, mean center data columns or not
 % Scale     logical, standardize data columns or not
 % CV        defines cross-validation splits pattern (see 'help crossval')
+% CVScope   defines if centering/scaling must be done globally ('global')
+% or locally ('local'). Default value is 'global'.
 %
 % !!! This is a generic function, use 'pcvpcr()' or 'pcvpls()' instead !!!
 %
-function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist)
 
    if size(Y, 1) < size(Y, 2)
        Y = Y';
@@ -20,19 +22,7 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist)
    nRows = size(X, 1);
    nPred = size(X, 2);
    nResp = size(Y, 2);
-
-   % default values
-   if nargin < 6
-       CV = {"ven", 4};
-   end
-
-   if nargin < 5
-       Scale = false;
-   end
-
-   if nargin < 4
-       Center = true;
-   end
+   
 
    % compute indices for cross-validation
    ind = crossval(CV, nRows, Y);
@@ -40,43 +30,38 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist)
    % compute number of segments
    nSeg = max(ind);
 
-   maxNComp = min([nRows - round(nRows / nSeg) - 1, nPred, 30]);
-
-   if nargin < 2 || nComp > maxNComp
+   % adjust number of components if necessary
+   maxNComp = min([nRows - round(nRows / nSeg) - 1, nPred]);
+   if nComp > maxNComp
       nComp = maxNComp;
    end
 
    % compute and save mean and standard deviation
    if Center
-      mX = mean(X);
-      mY = mean(Y);
+      mXg = mean(X);
+      mYg = mean(Y);
    else
-      mX = zeros(1, nPred);
-      mY = zeros(1, nResp);
+      mXg = zeros(1, nPred);
+      mYg = zeros(1, nResp);
    end
 
    if Scale
-      sX = std(X);
-      sY = std(Y);
+      sXg = std(X);
+      sYg = std(Y);
    else
-      sX = ones(1, nPred);
-      sY = ones(1, nResp);
+      sXg = ones(1, nPred);
+      sYg = ones(1, nResp);
    end
 
-   % autoscale the calibration set
-   X = X - mX;
-   Y = Y - mY;
-
-   X = X ./ sX;
-   Y = Y ./ sY;
+   % autoscale the calibration set and compute global model
+   X = (X - mXg) ./ sXg;
+   Y = (Y - mYg) ./ sYg;
+   m = funlist.getglobalmodel(X, Y, nComp);
 
    % prepare empty matrix for pseudo-validation set and scaling
    % coefficients
    Xpv = zeros(nRows, nPred);
    D = zeros(nSeg, nComp);
-
-   % compute global model
-   m = funlist.getglobalmodel(X, Y, nComp);
 
    % loop for computing the PV set
    for k = 1:nSeg
@@ -89,6 +74,31 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist)
       Xc = X(indc, :);
       Yc = Y(indc, :);
 
+      
+      % autoscale data in case of local scope
+      if CVScope == "local"
+         
+         if Center
+            mX = mean(Xc);
+            mY = mean(Yc);
+         else
+            mX = zeros(1, nPred);
+            mY = zeros(1, nResp);
+         end
+
+         if Scale
+            sX = std(Xc);
+            sY = std(Yc);
+         else
+            sX = ones(1, nPred);
+            sY = ones(1, nResp);
+         end
+         
+         Xc = (Xc - mX) ./ sX;
+         Yc = (Yc - mY) ./ sY;
+         Xk = (Xk - mX) ./ sX;
+      end
+            
       % compute local model for current segment
       mk = funlist.getlocalmodel(Xc, Yc, m);
 
@@ -103,8 +113,7 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist)
       Xpv(indk, :) = Xpvhat + Xpvorth;
    end
 
-   % uscenter and unscale the data
-   Xpv = Xpv .* sX;
-   Xpv = Xpv + mX;
+   % uscenter and unscale the data for global scope
+   Xpv = Xpv .* sXg + mXg;
 end
 
