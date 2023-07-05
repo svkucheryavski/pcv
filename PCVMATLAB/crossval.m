@@ -16,7 +16,7 @@
 % 'CV = {"loo"}' - full cross-validation (leave one out)
 %
 function ind = crossval(CV, nObj, Y)
-
+   
    % if user already provided vector with values - return it
    if isa(CV, 'double') && numel(CV) == nObj
       ind = CV;
@@ -26,16 +26,17 @@ function ind = crossval(CV, nObj, Y)
    % check and process CV parameters
    p = getcvparams(CV, nObj);
 
-   % check number of segments
-   if p{2} < 2 || p{2} > nObj
-      error('Wrong value for number of segments (should be between 2 and number of objects).')
-   end
-
    % leave-one-out
    if p{1} == "loo"
       ind = (1:nObj)';
       return;
    end
+
+   % check number of segments
+   if p{2} < 2 || p{2} > nObj
+      error('Wrong value for number of segments (should be between 2 and number of objects).')
+   end
+
 
    nSeg = p{2};
    nMax = ceil(nObj / nSeg);
@@ -47,6 +48,11 @@ function ind = crossval(CV, nObj, Y)
       if nargin < 3
          return;
       end
+      
+      if size(Y, 1) < size(Y, 2)
+         Y = Y';
+      end
+      
       [~, rowInd] = sort(Y(:, 1));
       [~, rowInd] = sort(rowInd);
       ind = ind(rowInd);
