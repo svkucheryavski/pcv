@@ -3,12 +3,36 @@
 ####################################
 
 setup({
-   pdf(file = tempfile("pcv-test-pca-", fileext = ".pdf"))
+   #pdf(file = tempfile("pcv-test-pca-", fileext = ".pdf"))
 })
 
 teardown({
-   dev.off()
+   #dev.off()
 })
+
+
+plotdistance <- function(rcl, rcv, rpv, a, main = "Distance plot") {
+
+   q <- rcl$Q[, a]
+   qpv <- rpv$Q[, a]
+   qcv <- rcv$Q[, a]
+   q0 <- mean(q)
+
+   h <- rcl$H[, a]
+   hpv <- rpv$H[, a]
+   hcv <- rcv$H[, a]
+   h0 <- mean(h)
+
+   plot(
+      c(h/h0, hcv/h0, hpv/h0), c(q/q0, qcv/q0, qpv/q0),
+      col = rep(c("blue", "red", "black"), each = length(h)),
+      pch = rep(c(5, 1, 4), each = length(h)),
+      xlab = "Score distance, h/h0",
+      ylab = "Orthogonal distance, q/q0",
+      main = main
+   )
+
+}
 
 #' Create global PCA model and apply it to Xpv set
 pcapv <- function(X, Xpv, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, scale = FALSE) {
@@ -124,8 +148,8 @@ pcacvlocal <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven"
       indk <- cvind == k
 
       # split data to local calibration and validation sets
-      Xc <- Xs[indc, , drop = FALSE]
-      Xk <- Xs[indk, , drop = FALSE]
+      Xc <- X[indc, , drop = FALSE]
+      Xk <- X[indk, , drop = FALSE]
 
       # local [re]-scaling
       mX <- if (center) apply(Xc, 2, mean) else rep(0, ncol(Xc))
@@ -181,159 +205,169 @@ test_that("- pcvpca() works well for random data - simple test.", {
 })
 
 test_that("- pcvpca() works well for random data.", {
+
    I <- 100
    J <- 50
-   A <- 30
-   K <- 4
 
    set.seed(42)
    X <- matrix(rnorm(I * J), I, J)
 
-   params <- list()
-   params[[1]] <- list(X = X)
-   params[[2]] <- list(X = X, ncomp = 1)
-   params[[3]] <- list(X = X, ncomp = A)
-   params[[4]] <- list(X = X, ncomp = A, cv = 10)
-   params[[5]] <- list(X = X, ncomp = A, cv = 10, scale = TRUE)
-   params[[6]] <- list(X = X, ncomp = A, cv = list("ven", 4))
-   params[[7]] <- list(X = X, ncomp = A, cv = list("ven", 4), scale = TRUE)
-   params[[8]] <- list(X = X, ncomp = A, cv = list("loo"), scale = TRUE)
-   params[[9]] <- list(X = X, ncomp = A, cv = list("loo"))
+   cv_cases <- list(list("ven", 4), list("ven", 10), list("loo"), list("rand", 10))
+   ncomp_cases <- c(1, 10, 20, 30)
+   center_cases <- c(TRUE, FALSE)
+   scale_cases <- c(TRUE, FALSE)
 
-   for (i in seq_along(params)) {
+   cases <- expand.grid(cv = cv_cases, ncomp = ncomp_cases, center = center_cases, scale = scale_cases)
+   for (i in seq_len(nrow(cases))) {
 
-      X <- params[[i]]$X
-      ncomp <- if (is.null(params[[i]]$ncomp)) min(nrow(X) - 1, ncol(X), 30) else params[[i]]$ncomp
-      cv <- if (is.null(params[[i]]$cv)) list("ven", 4) else params[[i]]$cv
-      center <- if (is.null(params[[i]]$center)) TRUE else params[[i]]$center
-      scale <- if (is.null(params[[i]]$scale)) FALSE else params[[i]]$scale
+      cv <- cases[i, "cv"][[1]]
+      ncomp <- cases[i, "ncomp"]
+      center <- cases[i, "center"]
+      scale <- cases[i, "scale"]
 
-      # this is needed for reproducibility if cv is random
+
+      # test global results
       set.seed(42)
-      expect_silent(Xpv <- do.call(pcvpca, params[[i]]))
-      expect_equal(nrow(Xpv), nrow(X))
-      expect_equal(ncol(Xpv), ncol(X))
-      expect_true(ks.test(X, Xpv)$p.value > 0.01)
+      Xpv.g <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "global")
 
-
-      # this is needed for reproducibility if cv is random
       set.seed(42)
-      rcv <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
-      rpv <- pcapv(X, Xpv, ncomp = ncomp, center = center, scale = scale)
+      rcv.g <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+      rpv.g <- pcapv(X, Xpv.g, ncomp = ncomp, center = center, scale = scale)
 
-      expect_equivalent(rcv$H, rpv$H)
-      expect_equivalent(rcv$Q, rpv$Q)
+      expect_equivalent(rcv.g$H, rpv.g$H)
+      expect_equivalent(rcv.g$Q, rpv.g$Q)
+
+      # test local results
+      set.seed(42)
+      Xpv.l <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
+
+      set.seed(42)
+      rcv.l <- pcacvlocal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+      rpv.l <- pcapv(X, Xpv.l, ncomp = ncomp, center = center, scale = scale)
+
+      expect_equivalent(rcv.l$H, rpv.l$H)
+      expect_equivalent(rcv.l$Q, rpv.l$Q)
    }
-
 })
 
 test_that("- pcvpca() works well for Corn data.", {
+
    data(corn)
    X <- corn$spectra
 
-   Xpv <- pcvpca(X, 30, center = TRUE, scale = FALSE, cv = list("ven", 4))
-   expect_equal(nrow(Xpv), nrow(X))
-   expect_equal(ncol(Xpv), ncol(X))
+   cv_cases <- list(list("ven", 4), list("ven", 10), list("loo"), list("rand", 10))
+   ncomp_cases <- c(1, 10, 20, 30)
+   center_cases <- c(TRUE, FALSE)
+   scale_cases <- c(TRUE, FALSE)
 
-   mX <- apply(X, 2, mean)
-   Xmc <- scale(X, center = mX, scale = FALSE)
-   Xpvmc <- scale(Xpv, center = mX, scale = FALSE)
+   # case based tests
+   cases <- expand.grid(cv = cv_cases, ncomp = ncomp_cases, center = center_cases, scale = scale_cases)
+   for (i in seq_len(nrow(cases))) {
 
-   P <- svd(Xmc)$v[, 1:20]
-   T <- Xmc %*% P;
-   lambda <- colSums(T^2 / (nrow(X) - 1))
+      # get settings for current case
+      cv <- cases[i, "cv"][[1]]
+      ncomp <- cases[i, "ncomp"]
+      center <- cases[i, "center"]
+      scale <- cases[i, "scale"]
 
-   Tpv <- Xpvmc %*% P;
+      # tets results for global scope
+      set.seed(42)
+      Xpv.g <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "global")
 
-   # check the distances (reproducing example from the paper)
+      set.seed(42)
+      rcv.g <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+      rpv.g <- pcapv(X, Xpv.g, ncomp = ncomp, center = center, scale = scale)
+
+      expect_equivalent(rcv.g$H, rpv.g$H)
+      expect_equivalent(rcv.g$Q, rpv.g$Q)
+
+      # test results for local scope
+      set.seed(42)
+      Xpv.l <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
+
+      set.seed(42)
+      rcv.l <- pcacvlocal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+      rpv.l <- pcapv(X, Xpv.l, ncomp = ncomp, center = center, scale = scale)
+
+      expect_equivalent(rcv.l$H, rpv.l$H)
+      expect_equivalent(rcv.l$Q, rpv.l$Q)
+
+      # save outcomes as reference
+      cvText <- if (length(cv) == 2) paste0(cv[[1]], cv[[2]]) else cv[[1]]
+      caseSuffix <- sprintf("-%d-%s-%s-%s.csv", ncomp, center, scale, cvText)
+      caseDir <- "../../../References/"
+
+      write.table(rpv.g$Q, file = paste0(caseDir, "Qpvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+      write.table(rpv.g$H, file = paste0(caseDir, "Hpvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+      write.table(rpv.l$Q, file = paste0(caseDir, "Qpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+      write.table(rpv.l$H, file = paste0(caseDir, "Hpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   }
+
+   # manual tests
+   ncomp <- 30
+   center <- TRUE
+   scale <- FALSE
+   cv <- list("ven", 4)
+
+   Xpv <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv)
+
+   rcl <- pcapv(X, X, ncomp = ncomp, center = center, scale = scale)
+   rpv <- pcapv(X, Xpv, ncomp = ncomp, center = center, scale = scale)
+   rcv <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+
    a <- 2;
-   E <- Xmc - tcrossprod(T[, 1:a], P[, 1:a]);
-   Epv <- Xpvmc - tcrossprod(Tpv[, 1:a], P[, 1:a]);
-   q <- rowSums(E^2)
-   qpv <- rowSums(Epv^2)
-   h <- rowSums(T[, 1:a]^2 %*% diag(1/lambda[1:a], a, a))
-   hpv <- rowSums(Tpv[, 1:a]^2 %*% diag(1/lambda[1:a], a, a))
+
+   q <- rcl$Q[, a]
+   qpv <- rpv$Q[, a]
+   h <- rcl$H[, a]
+   hpv <- rpv$H[, a]
+
    expect_equal(sum(q/mean(q) > 4), 4)
    expect_equal(sum(qpv/mean(q) > 4), 4)
    expect_equal(sum(h/mean(h) > 5), 2)
    expect_equal(sum(h/mean(h) > 5), 2)
 
    a <- 20;
-   E <- Xmc - tcrossprod(T[, 1:a], P[, 1:a]);
-   Epv <- Xpvmc - tcrossprod(Tpv[, 1:a], P[, 1:a]);
-   q <- rowSums(E^2)
-   qpv <- rowSums(Epv^2)
-   h <- rowSums(T[, 1:a]^2 %*% diag(1/lambda[1:a], a, a))
-   hpv <- rowSums(Tpv[, 1:a]^2 %*% diag(1/lambda[1:a], a, a))
+
+   q <- rcl$Q[, a]
+   qpv <- rpv$Q[, a]
+   h <- rcl$H[, a]
+   hpv <- rpv$H[, a]
 
    expect_equal(sum(q/mean(q) > 4), 0)
    expect_equal(sum(qpv/mean(q) > 4), 5)
    expect_equal(sum(h/mean(h) > 2), 3)
    expect_equal(sum(hpv/mean(h) > 2), 9)
 
-   # compare with manual computation
-   set.seed(42)
-   rcv <- pcacvglobal(X, ncomp = 30, cv = list("ven", 4), center = TRUE, scale = FALSE)
-   rpv <- pcapv(X, Xpv, ncomp = 30, center = TRUE, scale = FALSE)
-
-   expect_equivalent(rcv$H, rpv$H)
-   expect_equivalent(rcv$Q, rpv$Q)
-
 })
 
-test_that("- pcvpca() works well for Corn data and both global and local scope.", {
+test_that("- pcvpca() - visual tests.", {
+
    data(corn)
    X <- corn$spectra
 
    ncomp <- 30
-   cv <- list("ven", 10)
    center <- TRUE
-   scale <- FALSE
+   scale <- TRUE
+   cv <- list("ven", 20)
 
-   # generate PV-sets
-   Xpv.l <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
-   Xpv.g <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "global")
-
-   # get CCV results
-   rcv.l <- pcacvlocal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+   # global scope
+   Xpv.g <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv)
    rcv.g <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
-
-   # get PCV results
-   rpv.l <- pcapv(X, Xpv.l, ncomp = ncomp, center = center, scale = scale)
    rpv.g <- pcapv(X, Xpv.g, ncomp = ncomp, center = center, scale = scale)
+   rcl.g <- pcapv(X, X, ncomp = ncomp, center = center, scale = scale)
 
-   # here we expect that the difference between PV and CCV results will not be
-   # more than 5% of maximum distance for the same component
-   expect_lte(max(sweep(abs(rcv.l$H - rpv.l$H), 2, apply(rcv.l$H, 2, max), "/")),  0.05)
-   expect_lte(max(sweep(abs(rcv.l$Q - rpv.l$Q), 2, apply(rcv.l$Q, 2, max), "/")),  0.05)
+   # local scope
+   Xpv.l <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
+   rcv.l <- pcacvlocal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+   rpv.l <- pcapv(X, Xpv.l, ncomp = ncomp, center = center, scale = scale)
+   rcl.l <- pcapv(X, X, ncomp = ncomp, center = center, scale = scale)
 
-   # compare global PV-results with CCV
-   expect_equivalent(rcv.g$H, rpv.g$H)
-   expect_equivalent(rcv.g$Q, rpv.g$Q)
-
-   # do PCA and get PV results from there
-   #m <- mdatools::pca(X, 20, center = TRUE, scale = FALSE)
-   #r.l <- predict(m, Xpv.l)
-   #r.g <- predict(m, Xpv.g)
-
-   # show plots
-   par(mfrow = c(3, 2))
-
-   # distance plots for local results
-   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.l), ncomp =  2)
-   #points(rcv.l$H[, 2], rcv.l$Q[, 2], pch = 4)
-   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.l), ncomp = 10)
-   #points(rcv.l$H[, 10], rcv.l$Q[, 10], pch = 4)
-
-   # distance plots for global results
-   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.g), ncomp =  2)
-   #points(rcv.g$H[, 2], rcv.g$Q[, 2], pch = 4)
-   #mdatools::plotResiduals(m, pch = 1, log = FALSE, norm = FALSE, res = list(cal = m$calres, pv = r.g), ncomp = 10)
-   #points(rcv.g$H[, 10], rcv.g$Q[, 10], pch = 4)
-
-   # line plots with PV-sets
-   #mdatools::mdaplot(mdatools::prep.autoscale(Xpv.l), type = "l")
-   #mdatools::mdaplot(mdatools::prep.autoscale(Xpv.g), type = "l")
+   # distance plots
+   par(mfrow = c(2, 2))
+   plotdistance(rcl.g, rcv.g, rpv.g,  4, main = "Global, a = 4")
+   plotdistance(rcl.g, rcv.g, rpv.g, 20, main = "Global, a = 20")
+   plotdistance(rcl.l, rcv.l, rpv.l,  4, main = "Local, a = 4")
+   plotdistance(rcl.l, rcv.l, rpv.l, 20, main = "Local, a = 20")
 
 })
-

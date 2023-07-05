@@ -121,10 +121,8 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
          X.k <- scale(X.k, center = mXl, scale = sXl)
       }
 
-
       # get loadings for local model and rotation matrix between global and local models
       m.k <- svd(X.c, nv = ncomp, nu = ncomp)
-      s.k <- m.k$d[seq_len(ncomp)]
       P.k <- m.k$v
 
       # correct direction of loadings for local model
@@ -144,12 +142,6 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
 
       # create and save the Xpv
       Xpv[ind.k, ] <- Xpv.hat + Xpv.orth
-
-      # uscenter and unscale the data in case of local cv scope
-      if (cv.scope == "local") {
-         Xpv[ind.k, ] <- sweep(Xpv[ind.k, , drop = FALSE], 2, sXl, "*")
-         Xpv[ind.k, ] <- sweep(Xpv[ind.k, , drop = FALSE], 2, mXl, "+")
-      }
    }
 
    # uscenter and unscale the data using global mean and std
