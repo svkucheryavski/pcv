@@ -2,6 +2,11 @@
 # Tests for PCV for PCA/SIMCA      #
 ####################################
 
+# global settings
+
+## directory to keep CSV files with reference values
+caseDir <- "../../../References/"
+
 setup({
    #pdf(file = tempfile("pcv-test-pca-", fileext = ".pdf"))
 })
@@ -10,7 +15,7 @@ teardown({
    #dev.off()
 })
 
-
+#' Show distance plot for the results
 plotdistance <- function(rcl, rcv, rpv, a, main = "Distance plot") {
 
    q <- rcl$Q[, a]
@@ -182,85 +187,27 @@ pcacvlocal <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven"
    return (list(Q = Qcv, H = Hcv))
 }
 
+#' Save results as reference values
+savereferences <- function(rcv.g, rcv.l, rpv.g, rpv.l, center, scale, ncomp, cv) {
+   cvText <- if (length(cv) == 2) paste0(cv[[1]], cv[[2]]) else cv[[1]]
+   caseSuffix <- sprintf("-%d-%s-%s-%s.csv", ncomp, center, scale, cvText)
 
-context("Tests for 'pcvpca()':")
+   write.table(rpv.g$Q, file = paste0(caseDir, "Qpvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(rpv.g$H, file = paste0(caseDir, "Hpvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(rpv.l$Q, file = paste0(caseDir, "Qpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(rpv.l$H, file = paste0(caseDir, "Hpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+}
+$
+#' Run tests for different combinations of parameters
+runtests <- function(X, saveRes = FALSE) {
 
-test_that("- pcvpca() works well for random data - simple test.", {
-
-   I <- 100
-   J <- 50
-   X <- matrix(rnorm(I * J), I, J)
-
-   ncomp <- 30
-   cv <- list("ven", 4)
-   center <- TRUE
-   scale <- FALSE
-
-   Xpv <- pcvpca(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
-   rcv <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
-   rpv <- pcapv(X, Xpv, ncomp = ncomp, center = center, scale = scale)
-
-   expect_equivalent(rcv$H, rpv$H)
-   expect_equivalent(rcv$Q, rpv$Q)
-})
-
-test_that("- pcvpca() works well for random data.", {
-
-   I <- 100
-   J <- 50
-
-   set.seed(42)
-   X <- matrix(rnorm(I * J), I, J)
-
+   # test cases
    cv_cases <- list(list("ven", 4), list("ven", 10), list("loo"), list("rand", 10))
    ncomp_cases <- c(1, 10, 20, 30)
    center_cases <- c(TRUE, FALSE)
    scale_cases <- c(TRUE, FALSE)
 
-   cases <- expand.grid(cv = cv_cases, ncomp = ncomp_cases, center = center_cases, scale = scale_cases)
-   for (i in seq_len(nrow(cases))) {
-
-      cv <- cases[i, "cv"][[1]]
-      ncomp <- cases[i, "ncomp"]
-      center <- cases[i, "center"]
-      scale <- cases[i, "scale"]
-
-
-      # test global results
-      set.seed(42)
-      Xpv.g <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "global")
-
-      set.seed(42)
-      rcv.g <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
-      rpv.g <- pcapv(X, Xpv.g, ncomp = ncomp, center = center, scale = scale)
-
-      expect_equivalent(rcv.g$H, rpv.g$H)
-      expect_equivalent(rcv.g$Q, rpv.g$Q)
-
-      # test local results
-      set.seed(42)
-      Xpv.l <- pcvpca(X, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
-
-      set.seed(42)
-      rcv.l <- pcacvlocal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
-      rpv.l <- pcapv(X, Xpv.l, ncomp = ncomp, center = center, scale = scale)
-
-      expect_equivalent(rcv.l$H, rpv.l$H)
-      expect_equivalent(rcv.l$Q, rpv.l$Q)
-   }
-})
-
-test_that("- pcvpca() works well for Corn data.", {
-
-   data(corn)
-   X <- corn$spectra
-
-   cv_cases <- list(list("ven", 4), list("ven", 10), list("loo"), list("rand", 10))
-   ncomp_cases <- c(1, 10, 20, 30)
-   center_cases <- c(TRUE, FALSE)
-   scale_cases <- c(TRUE, FALSE)
-
-   # case based tests
+   # run tests
    cases <- expand.grid(cv = cv_cases, ncomp = ncomp_cases, center = center_cases, scale = scale_cases)
    for (i in seq_len(nrow(cases))) {
 
@@ -293,15 +240,51 @@ test_that("- pcvpca() works well for Corn data.", {
       expect_equivalent(rcv.l$Q, rpv.l$Q)
 
       # save outcomes as reference
-      cvText <- if (length(cv) == 2) paste0(cv[[1]], cv[[2]]) else cv[[1]]
-      caseSuffix <- sprintf("-%d-%s-%s-%s.csv", ncomp, center, scale, cvText)
-      caseDir <- "../../../References/"
-
-      write.table(rpv.g$Q, file = paste0(caseDir, "Qpvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
-      write.table(rpv.g$H, file = paste0(caseDir, "Hpvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
-      write.table(rpv.l$Q, file = paste0(caseDir, "Qpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
-      write.table(rpv.l$H, file = paste0(caseDir, "Hpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+      if (saveRes) {
+         savereferences(rpv.g, rpv.l, center, scale, ncomp, cv)
+      }
    }
+}
+
+context("Tests for 'pcvpca()':")
+
+test_that("- pcvpca() works well for random data - simple test.", {
+
+   I <- 100
+   J <- 50
+   X <- matrix(rnorm(I * J), I, J)
+
+   ncomp <- 30
+   cv <- list("ven", 4)
+   center <- TRUE
+   scale <- FALSE
+
+   Xpv <- pcvpca(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+   rcv <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
+   rpv <- pcapv(X, Xpv, ncomp = ncomp, center = center, scale = scale)
+
+   expect_equivalent(rcv$H, rpv$H)
+   expect_equivalent(rcv$Q, rpv$Q)
+})
+
+test_that("- pcvpca() works well for random data.", {
+
+   I <- 100
+   J <- 50
+
+   set.seed(42)
+   X <- matrix(rnorm(I * J), I, J)
+
+   runtests(X)
+})
+
+test_that("- pcvpca() works well for Corn data.", {
+
+   data(corn)
+   X <- corn$spectra
+
+   # run automatic tests and save results as reference values
+   runtests(X, saveRes = TRUE)
 
    # manual tests
    ncomp <- 30

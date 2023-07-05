@@ -110,8 +110,8 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
       ind.c <- ind != k
       ind.k <- ind == k
 
-      X.c <- X[ ind.c, , drop = FALSE]
-      X.k <- X[ ind.k, , drop = FALSE]
+      X.c <- X[ind.c, , drop = FALSE]
+      X.k <- X[ind.k, , drop = FALSE]
 
       # compute mean and standard deviation and autoscale in case of local scope
       if (cv.scope == "local") {
