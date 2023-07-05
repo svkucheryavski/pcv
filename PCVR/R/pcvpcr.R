@@ -79,7 +79,8 @@ pcvpcr <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
 
       # computes global PCR model
       getglobalmodel = function(X, Y, ncomp) {
-         P <- svd(X)$v[, 1:ncomp, drop = FALSE]
+         m <- svd(X, nv = ncomp, nu = ncomp)
+         P <- m$v[, seq_len(ncomp), drop = FALSE]
          T <- X %*% P
          C <- t(solve(crossprod(T)) %*% crossprod(T, Y))
          I <- diag(1, ncol(X))
@@ -89,13 +90,12 @@ pcvpcr <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
 
       # computes local PCR model
       getlocalmodel = function(X.c, Y.c, m) {
-         P.k <- svd(X.c)$v[, seq_len(ncomp), drop = FALSE]
+         m.k <- svd(X.c, nu = ncomp, nv = ncomp)
+         P.k <- m.k$v[, seq_len(ncomp), drop = FALSE]
          aa <- acos(colSums(m$P * P.k)) < (pi / 2)
          P.k <- P.k %*% diag(aa * 2 - 1, ncol(P.k), ncol(P.k))
-
          T.c <- X.c %*% P.k
          C.k <- t(solve(crossprod(T.c)) %*% crossprod(T.c, Y.c))
-
          return(list(P = P.k, C = C.k))
       },
 

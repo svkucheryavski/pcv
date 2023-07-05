@@ -25,70 +25,88 @@
 pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4),
    center = TRUE, scale = FALSE, funlist = list(), cv.scope = "global") {
 
+   nRows <- nrow(X)
+   nPred <- ncol(X)
+
    if (is.null(dim(Y))) {
-      dim(Y) <- c(nrow(X), 1)
+      dim(Y) <- c(nRows, 1)
    }
+
+   nResp <- ncol(Y)
 
    # keep names if any
    attrs <- attributes(X)
 
-   # compute global center and scale values for predictors
-   mXg <- if (center) apply(X, 2, mean) else rep(0, ncol(X))
-   sXg <- if (scale) apply(X, 2, sd) else rep(1, ncol(X))
-
-   # compute global center and scale values for responses
-   mYg <- if (center) apply(Y, 2, mean) else rep(0, ncol(Y))
-   sYg <- if (scale) apply(Y, 2, sd) else rep(1, ncol(Y))
-
-   # get indices for cross-validation
-   ind <- pcvcrossval(cv, nrow(X), Y[, 1])
+  # get indices for cross-validation
+   ind <- pcvcrossval(cv, nRows, Y[, 1])
 
    # get number of segments
-   nseg <- max(ind)
+   nSeg <- max(ind)
 
    # correct maximum number of components
-   max.ncomp <- min(nrow(X) - ceiling(nrow(X) / nseg) - 1, ncol(X))
+   max.ncomp <- min(nrow(X) - ceiling(nRows / nSeg) - 1, nPred)
    if (ncomp > max.ncomp) {
       ncomp <- max.ncomp
    }
 
-   # prepare empty matrix for pseudo-validation set
-   Xpv <- matrix(0, nrow(X), ncol(X))
-   D <- matrix(0, nseg, ncomp)
-
-   # this will be used only for PLS case
-   R <- array(0, dim = c(nseg, ncol(X), ncomp))
-
-   # do autoscaling and compute global model depending on CV scope
-   if (cv.scope == "global") {
-      X <- scale(X, center = mXg, scale = sXg)
-      Y <- scale(Y, center = mYg, scale = sYg)
-      m <- funlist$getglobalmodel(X, Y, ncomp)
-   } else {
-      m <- funlist$getglobalmodel(scale(X, center = mXg, scale = sXg), scale(Y, center = mYg, scale = sYg), ncomp)
+   # compute global center and scale values for predictors
+   mX <- rep(0, nPred)
+   mY <- rep(0, nResp)
+   if (center) {
+      mX <- apply(X, 2, mean)
+      mY <- apply(Y, 2, mean)
    }
 
+   sX <- rep(1, nPred)
+   sY <- rep(1, nResp)
+   if (scale) {
+      sX <- apply(X, 2, sd)
+      sY <- apply(Y, 2, sd)
+   }
+
+   # autoscale globally
+   X <- scale(X, center = mX, scale = sX)
+   Y <- scale(Y, center = mY, scale = sY)
+   m <- funlist$getglobalmodel(X, Y, ncomp)
+
+   # prepare empty matrix for pseudo-validation set
+   Xpv <- matrix(0, nRows, nPred)
+   D <- matrix(0, nSeg, ncomp)
+
+   # this will be used only for PLS case
+   R <- array(0, dim = c(nSeg, nPred, ncomp))
 
    # loop for computing the PV set
-   for (k in seq_len(nseg)) {
+   for (k in seq_len(nSeg)) {
 
       # split data to calibration and validation
       ind.c <- ind != k
       ind.k <- ind == k
 
-      X.c <- X[ ind.c, , drop = FALSE]
-      X.k <- X[ ind.k, , drop = FALSE]
-      Y.c <- Y[ ind.c, , drop = FALSE]
+      X.k <- X[ind.k, , drop = FALSE]
+      X.c <- X[ind.c, , drop = FALSE]
+      Y.c <- Y[ind.c, , drop = FALSE]
 
       # if cv.scope is local autoscale locally
-      if (cv.scope != "global") {
-         mX <- if (center) apply(X.c, 2, mean) else rep(0, ncol(X.c))
-         sX <- if (scale) apply(X.c, 2, sd) else rep(1, ncol(X.c))
-         mY <- if (center) apply(Y.c, 2, mean) else rep(0, ncol(Y.c))
-         sY <- if (scale) apply(Y.c, 2, sd) else rep(1, ncol(Y.c))
-         X.c <- scale(X.c, center = mX, scale = sX)
-         X.k <- scale(X.k, center = mX, scale = sX)
-         Y.c <- scale(Y.c, center = mY, scale = sY)
+      if (cv.scope == "local") {
+
+         mXl <- rep(0, nPred)
+         mYl <- rep(0, nResp)
+         if (center) {
+            mXl <- apply(X.c, 2, mean)
+            mYl <- apply(Y.c, 2, mean)
+         }
+
+         sXl <- rep(1, nPred)
+         sYl <- rep(1, nResp)
+         if (scale) {
+            sXl <- apply(X.c, 2, sd)
+            sYl <- apply(Y.c, 2, sd)
+         }
+
+         X.c <- scale(X.c, center = mXl, scale = sXl)
+         Y.c <- scale(Y.c, center = mYl, scale = sYl)
+         X.k <- scale(X.k, center = mXl, scale = sXl)
       }
 
       # compute local model for current segment
@@ -107,19 +125,11 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
 
       # add the orthogonal part
       Xpv[ind.k, ] <- Xpv.hat + Xpv.orth
-
-      # uncenter and unscale the data for local scope
-      if (cv.scope != "global") {
-         Xpv[ind.k, ] <- sweep(Xpv[ind.k, ], 2, sX, "*")
-         Xpv[ind.k, ] <- sweep(Xpv[ind.k, ], 2, mX, "+")
-      }
    }
 
    # uncenter and unscale the data for global scope
-   if (cv.scope == "global") {
-      Xpv <- sweep(Xpv, 2, sXg, "*")
-      Xpv <- sweep(Xpv, 2, mXg, "+")
-   }
+   Xpv <- sweep(Xpv, 2, sX, "*")
+   Xpv <- sweep(Xpv, 2, mX, "+")
 
    # add initial attributes
    attributes(Xpv) <- attrs

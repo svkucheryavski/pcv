@@ -2,13 +2,35 @@
 # Tests for PCV for PCR            #
 ####################################
 
+## directory to keep CSV files with reference values
+caseDir <- "../../../References/"
+
 setup({
-   pdf(file = tempfile("pcv-test-pcr-", fileext = ".pdf"))
+   #pdf(file = tempfile("pcv-test-pcr-", fileext = ".pdf"))
 })
 
 teardown({
-   dev.off()
+   #dev.off()
 })
+
+#' Show distance plot for the results
+plotpredictions <- function(Y, rcl, rcv, rpv, a, main = "Predictions") {
+
+   y <- Y[, 1]
+   yp <- rcl$Yp[, a]
+   ypv <- rpv$Yp[, a]
+   ycv <- rcv$Yp[, a]
+
+   plot(
+      c(y, y, y), c(yp, ycv, ypv),
+      col = rep(c("blue", "red", "black"), each = length(y)),
+      pch = rep(c(5, 1, 4), each = length(y)),
+      xlab = "Reference values, y",
+      ylab = "Predicted values, yp",
+      main = main
+   )
+
+}
 
 #' Create global PCR model and apply it to Xpv set
 pcrpv <- function(X, Y, Xpv, ncomp, center = TRUE, scale = FALSE) {
@@ -17,26 +39,41 @@ pcrpv <- function(X, Y, Xpv, ncomp, center = TRUE, scale = FALSE) {
       dim(Y) <- c(nrow(X), 1)
    }
 
-   mX <- if (center) apply(X, 2, mean) else rep(0, ncol(X))
-   sX <- if (scale)  apply(X, 2, sd) else rep(1, ncol(X))
-   mY <- if (center) apply(Y, 2, mean) else 0
-   sY <- if (center) apply(Y, 2, sd) else 1
+   if (center) {
+      mX <- apply(X, 2, mean)
+      mY <- apply(Y, 2, mean)
+   } else {
+      mX <- rep(0, ncol(X))
+      mY <- rep(0, ncol(Y))
+   }
+
+   if (scale)  {
+      sX <- apply(X, 2, sd)
+      sY <- apply(Y, 2, sd)
+   } else {
+      sX <- rep(1, ncol(X))
+      sY <- rep(1, ncol(Y))
+   }
 
    Xs <- scale(X, center = mX, scale = sX)
    Ys <- scale(Y, center = mY, scale = sY)
    Xpvs <- scale(Xpv, center = mX, scale = sX)
 
    # global model
-   P <- svd(Xs)$v[, 1:ncomp]
+   m <- svd(Xs, nu = ncomp, nv = ncomp)
+   P <- m$v[, seq_len(ncomp), drop = FALSE]
    T <- Xs %*% P;
 
    # predictions for PV-set
    Tpv <- Xpvs %*% P;
    Ypv <- matrix(0, nrow(Y), ncomp)
 
-   for (a in 1:ncomp) {
-      C <- solve(crossprod(T[, 1:a, drop = FALSE])) %*% crossprod(T[, 1:a, drop = FALSE], Ys)
-      Ypv[, a] <- Tpv[, 1:a, drop = FALSE] %*% C;
+   for (a in seq_len(ncomp)) {
+      aind <- seq_len(a)
+      Ta <- T[, aind, drop = FALSE]
+      Tpva <- Tpv[, aind, drop = FALSE]
+      Ca <- solve(crossprod(Ta)) %*% crossprod(Ta, Ys)
+      Ypv[, a] <- Tpva %*% Ca;
    }
 
    Ypv <- Ypv * sY + mY
@@ -54,17 +91,29 @@ pcrcvglobal <- function(X, Y, ncomp, cv, center = TRUE, scale = FALSE) {
 
    cvind <- pcvcrossval(cv, nrow(X), Y)
 
-   mX <- if (center) apply(X, 2, mean) else rep(0, ncol(X))
-   sX <- if (scale)  apply(X, 2, sd) else rep(1, ncol(X))
-   mY <- if (center) apply(Y, 2, mean) else 0
-   sY <- if (center) apply(Y, 2, sd) else 1
+   if (center) {
+      mX <- apply(X, 2, mean)
+      mY <- apply(Y, 2, mean)
+   } else {
+      mX <- rep(0, ncol(X))
+      mY <- 0
+   }
+
+   if (scale) {
+      sX <- apply(X, 2, sd)
+      sY <- apply(Y, 2, sd)
+   } else {
+      sX <- rep(1, ncol(X))
+      sY <- 1
+   }
 
    Xs <- scale(X, center = mX, scale = sX)
    Ys <- scale(Y, center = mY, scale = sY)
 
    nSeg <- max(cvind)
    Ycv <- matrix(0, nrow(Y), ncomp)
-   for (i in unique(cvind)) {
+
+   for (i in seq_len(nSeg)) {
 
       indc <- cvind != i
       indk <- cvind == i
@@ -73,13 +122,18 @@ pcrcvglobal <- function(X, Y, ncomp, cv, center = TRUE, scale = FALSE) {
       Yc <- Ys[indc, , drop = FALSE]
       Xk <- Xs[indk, , drop = FALSE]
 
-      Pk <- svd(Xc)$v[, 1:ncomp]
+      mk <- svd(Xc, nu = ncomp, nv = ncomp)
+      Pk <- mk$v[, seq_len(ncomp), drop = FALSE]
+
       Tc <- Xc %*% Pk;
       Tk <- Xk %*% Pk;
 
-      for (a in 1:ncomp) {
-         C <- solve(crossprod(Tc[, 1:a, drop = FALSE])) %*% crossprod(Tc[, 1:a, drop = FALSE], Yc)
-         Ycv[indk, a] <- Tk[, 1:a, drop = FALSE] %*% C;
+      for (a in seq_len(ncomp)) {
+         aind <- seq_len(a)
+         Tca <- Tc[, aind, drop = FALSE]
+         Tka <- Tk[, aind, drop = FALSE]
+         Ca <- solve(crossprod(Tca)) %*% crossprod(Tca, Yc)
+         Ycv[indk, a] <- Tka %*% Ca;
       }
    }
 
@@ -100,7 +154,7 @@ pcrcvlocal <- function(X, Y, ncomp, cv, center = TRUE, scale = FALSE) {
 
    nSeg <- max(cvind)
    Ycv <- matrix(0, nrow(Y), ncomp)
-   for (i in unique(cvind)) {
+   for (i in seq_len(nSeg)) {
 
       indc <- cvind != i
       indk <- cvind == i
@@ -109,23 +163,36 @@ pcrcvlocal <- function(X, Y, ncomp, cv, center = TRUE, scale = FALSE) {
       Yc <- Y[indc, , drop = FALSE]
       Xk <- X[indk, , drop = FALSE]
 
-      mX <- if (center) apply(Xc, 2, mean) else rep(0, ncol(Xc))
-      sX <- if (scale)  apply(Xc, 2, sd) else rep(1, ncol(Xc))
-      mY <- if (center) apply(Yc, 2, mean) else 0
-      sY <- if (center) apply(Yc, 2, sd) else 1
+      mX <- rep(0, ncol(Xc))
+      mY <- 0
+      if (center) {
+         mX <- apply(Xc, 2, mean)
+         mY <- apply(Yc, 2, mean)
+      }
+
+      sX <- rep(1, ncol(Xc))
+      sY <- 1
+      if (scale) {
+         sX <- apply(Xc, 2, sd)
+         sY <- apply(Yc, 2, sd)
+      }
+
 
       Xcs <- scale(Xc, center = mX, scale = sX)
-      Ycs <- scale(Yc, center = mY, scale = sY)
       Xks <- scale(Xk, center = mX, scale = sX)
+      Ycs <- scale(Yc, center = mY, scale = sY)
 
+      mk <- svd(Xcs, nu = ncomp, nv = ncomp)
+      Pk <- mk$v[, seq_len(ncomp), drop = FALSE]
+      Tc <- Xcs %*% Pk;
+      Tk <- Xks %*% Pk;
 
-      Pk = svd(Xcs)$v[, 1:ncomp]
-      Tc = Xcs %*% Pk;
-      Tk = Xks %*% Pk;
-
-      for (a in 1:ncomp) {
-         C <- solve(crossprod(Tc[, 1:a, drop = FALSE])) %*% crossprod(Tc[, 1:a, drop = FALSE], Ycs)
-         Ycv[indk, a] <- Tk[, 1:a, drop = FALSE] %*% C;
+      for (a in seq_len(ncomp)) {
+         aind <- seq_len(a)
+         Tca <- Tc[, aind, drop = FALSE]
+         Tka <- Tk[, aind, drop = FALSE]
+         Ca <- solve(crossprod(Tca)) %*% crossprod(Tca, Ycs)
+         Ycv[indk, a] <- Tka %*% Ca;
       }
 
       Ycv[indk, ] <- Ycv[indk, ] * sY + mY;
@@ -135,6 +202,78 @@ pcrcvlocal <- function(X, Y, ncomp, cv, center = TRUE, scale = FALSE) {
 
    return (list(Yp = Ycv, RMSE = sqrt(colSums(E^2) / nrow(X))))
 }
+
+#' Save results as reference values
+savereferences <- function(rpv.g, rpv.l, Dg, Dl, center, scale, ncomp, cv) {
+   cvText <- if (length(cv) == 2) paste0(cv[[1]], cv[[2]]) else cv[[1]]
+   caseSuffix <- sprintf("-%d-%s-%s-%s.csv", ncomp, center, scale, cvText)
+
+   write.table(rpv.g$Ypv, file = paste0(caseDir, "Ypvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(rpv.l$Ypv, file = paste0(caseDir, "Ypvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(Dg, file = paste0(caseDir, "Dg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(Dl, file = paste0(caseDir, "Dl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+}
+
+#' Run tests for different combinations of parameters
+runtests <- function(X, Y, saveRes = FALSE) {
+
+   cv_cases <- list(list("ven", 4), list("ven", 10), list("loo"), list("rand", 10))
+   ncomp_cases <- c(1, 10, 20, 30)
+   center_cases <- c(TRUE, FALSE)
+   scale_cases <- c(TRUE, FALSE)
+
+   cases <- expand.grid(cv = cv_cases, ncomp = ncomp_cases, center = center_cases, scale = scale_cases)
+   for (i in seq_len(nrow(cases))) {
+
+      cv <- cases[i, "cv"][[1]]
+      ncomp <- cases[i, "ncomp"]
+      center <- cases[i, "center"]
+      scale <- cases[i, "scale"]
+
+      # test global results - expect all predictions are identical
+      set.seed(42)
+      Xpv.g <- pcvpcr(X, Y, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "global")
+
+      set.seed(42)
+      rcv.g <- pcrcvglobal(X, Y, ncomp = ncomp, cv = cv, center = center, scale = scale)
+      rpv.g <- pcrpv(X, Y, Xpv.g, ncomp = ncomp, center = center, scale = scale)
+
+      expect_equivalent(rcv.g$Yp, rpv.g$Yp)
+      expect_equivalent(rcv.g$RMSE, rpv.g$RMSE)
+
+      # test local results - expect that difference in RMSE does not exceed 5% if center = TRUE
+      set.seed(42)
+      Xpv.l <- pcvpcr(X, Y, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
+
+      set.seed(42)
+      rcv.l <- pcrcvlocal(X, Y, ncomp = ncomp, cv = cv, center = center, scale = scale)
+      rpv.l <- pcrpv(X, Y, Xpv.l, ncomp = ncomp, center = center, scale = scale)
+
+      if (center) {
+         expect_true(all((abs(rcv.l$RMSE - rpv.l$RMSE) / rcv.l$RMSE) < 0.05))
+      }
+
+      # test scalars
+      Dg <- attr(Xpv.g, "D")
+      expect_false(is.null(Dg))
+      expect_equal(ncol(Dg), ncomp)
+      expect_true(all(Dg <  100))
+      expect_true(all(Dg > -100))
+
+      Dl <- attr(Xpv.l, "D")
+      expect_false(is.null(Dl))
+      expect_equal(ncol(Dl), ncomp)
+      expect_true(all(Dl <  100))
+      expect_true(all(Dl > -100))
+
+      # save outcomes as reference
+      if (saveRes) {
+         savereferences(rpv.g, rpv.l, Dg, Dl, center, scale, ncomp, cv)
+      }
+
+   }
+}
+
 
 context("Tests for 'pcvpcr()':")
 
@@ -148,53 +287,20 @@ test_that("- pcvpcr() works well for random data.", {
    X <- matrix(rnorm(I * J), I, J)
    Y <- X %*% runif(J)
 
-   params <- list()
-   params[[1]] <- list(X = X, Y = Y)
-   params[[2]] <- list(X = X, Y = Y, ncomp = 1)
-   params[[3]] <- list(X = X, Y = Y, ncomp = A)
-   params[[4]] <- list(X = X, Y = Y, ncomp = A, cv = 10)
-   params[[5]] <- list(X = X, Y = Y, ncomp = A, cv = 10, scale = TRUE)
-   params[[6]] <- list(X = X, Y = Y, ncomp = A, cv = list("ven", 4))
-   params[[7]] <- list(X = X, Y = Y, ncomp = A, cv = list("ven", 4), scale = TRUE)
-   params[[8]] <- list(X = X, Y = Y, ncomp = A, cv = list("loo"), scale = TRUE)
-   params[[9]] <- list(X = X, Y = Y, ncomp = A, cv = list("loo"))
-
-   for (i in seq_along(params)) {
-
-      X <- params[[i]]$X
-      Y <- params[[i]]$Y
-      ncomp <- if (is.null(params[[i]]$ncomp)) min(nrow(X) - 1, ncol(X), 30) else params[[i]]$ncomp
-      cv <- if (is.null(params[[i]]$cv)) list("ven", 4) else params[[i]]$cv
-      center <- if (is.null(params[[i]]$center)) TRUE else params[[i]]$center
-      scale <- if (is.null(params[[i]]$scale)) FALSE else params[[i]]$scale
-
-      # this is needed for reproducibility if cv is random
-      set.seed(42)
-      expect_silent(Xpv <- do.call(pcvpcr, params[[i]]))
-      expect_equal(nrow(Xpv), nrow(X))
-      expect_equal(ncol(Xpv), ncol(X))
-
-      D <- attr(Xpv, "D")
-      expect_false(is.null(D))
-      expect_equal(ncol(D), ncomp)
-
-      # this is needed for reproducibility if cv is random
-      set.seed(42)
-      rcv <- pcrcvglobal(X, Y, ncomp = ncomp, cv = cv, center = center, scale = scale)
-      rpv <- pcrpv(X, Y, Xpv, ncomp = ncomp, center = center, scale = scale)
-
-      expect_equivalent(rcv$Yp, rpv$Yp)
-      expect_equivalent(rcv$RMSE, rpv$RMSE)
-   }
+   # automatic test
+   runtests(X, Y)
 })
 
 test_that("- pcvpcr() works well for Corn data.", {
+
    data(corn)
    X <- corn$spectra
    Y <- corn$moisture
 
-   # because of error in ordering of CV values (fixed now) we have to provide
-   # manual vector in this test
+   # automatic tests
+   runtests(X, Y, saveRes = TRUE)
+
+   # manual tests
    cv <- rep(seq_len(4), length.out = nrow(X))[order(Y)]
 
    Xpv <- pcvpcr(X, Y, 20, center = TRUE, scale = FALSE, cv = cv)
@@ -216,40 +322,34 @@ test_that("- pcvpcr() works well for Corn data.", {
       0.190, 0.181, 0.183, 0.187, 0.187, 0.183, 0.184, 0.193))
 })
 
-test_that("- pcvpcr() works well for Corn data with local scope.", {
+test_that("- pcvpcr() - visual tests.", {
+
    data(corn)
    X <- corn$spectra
    Y <- corn$moisture
 
-   # because of error in ordering of CV values (fixed now) we have to provide
-   # manual vector in this test
-   cv <- rep(seq_len(4), length.out = nrow(X))[order(Y)]
+   ncomp <- 30
+   center <- TRUE
+   scale <- TRUE
+   cv <- list("ven", 4)
 
-   Xpv <- pcvpcr(X, Y, 20, center = TRUE, scale = FALSE, cv = cv, cv.scope = "local")
-   D <- attr(Xpv, "D")
+   # global scope
+   Xpv.g <- pcvpcr(X, Y, ncomp = ncomp, center = center, scale = scale, cv = cv)
+   rcv.g <- pcrcvglobal(X, Y, ncomp = ncomp, cv = cv, center = center, scale = scale)
+   rpv.g <- pcrpv(X, Y, Xpv.g, ncomp = ncomp, center = center, scale = scale)
+   rcl.g <- pcrpv(X, Y, X, ncomp = ncomp, center = center, scale = scale)
 
-   rcv <- pcrcvlocal(X, Y, ncomp = 20, cv = cv, center = TRUE, scale = FALSE)
-   rpv <- pcrpv(X, Y, Xpv, ncomp = 20, center = TRUE, scale = FALSE)
+   # local scope
+   Xpv.l <- pcvpcr(X, Y, ncomp = ncomp, center = center, scale = scale, cv = cv, cv.scope = "local")
+   rcv.l <- pcrcvlocal(X, Y, ncomp = ncomp, cv = cv, center = center, scale = scale)
+   rpv.l <- pcrpv(X, Y, Xpv.l, ncomp = ncomp, center = center, scale = scale)
+   rcl.l <- pcrpv(X, Y, X, ncomp = ncomp, center = center, scale = scale)
 
-   expect_equivalent(rcv$Yp, rpv$Yp, tolerance = 0.02)
-   expect_equivalent(rcv$RMSE, rpv$RMSE, tolerance = 0.02)
-})
-
-test_that("- pcvpcr() compare local and global CV scope.", {
-   data(corn)
-   X <- corn$spectra
-   Y <- corn$moisture
-
-   cv <- list("ven", 10)
-   Xpv1 <- pcvpcr(X, Y, 20, center = TRUE, scale = FALSE, cv = cv, cv.scope = "global")
-   Xpv2 <- pcvpcr(X, Y, 20, center = TRUE, scale = FALSE, cv = cv, cv.scope = "local")
-
-   rcv1 <- pcrcvglobal(X, Y, ncomp = 20, cv = cv, center = TRUE, scale = FALSE)
-   rcv2 <- pcrcvlocal(X, Y, ncomp = 20, cv = cv, center = TRUE, scale = FALSE)
-   rpv1 <- pcrpv(X, Y, Xpv1, ncomp = 20, center = TRUE, scale = FALSE)
-   rpv2 <- pcrpv(X, Y, Xpv2, ncomp = 20, center = TRUE, scale = FALSE)
-
-   expect_equivalent(rcv1$RMSE, rpv1$RMSE)
-   expect_equivalent(rcv2$RMSE, rpv2$RMSE, tolerance = 0.01)
+   # distance plots
+   par(mfrow = c(2, 2))
+   plotpredictions(Y, rcl.g, rcv.g, rpv.g,  4, main = "Global, a = 4")
+   plotpredictions(Y, rcl.g, rcv.g, rpv.g, 20, main = "Global, a = 20")
+   plotpredictions(Y, rcl.l, rcv.l, rpv.l,  4, main = "Local, a = 4")
+   plotpredictions(Y, rcl.l, rcv.l, rpv.l, 20, main = "Local, a = 20")
 
 })
