@@ -208,8 +208,8 @@ savereferences <- function(rpv.g, rpv.l, Dg, Dl, center, scale, ncomp, cv) {
    cvText <- if (length(cv) == 2) paste0(cv[[1]], cv[[2]]) else cv[[1]]
    caseSuffix <- sprintf("-%d-%s-%s-%s.csv", ncomp, center, scale, cvText)
 
-   write.table(rpv.g$Ypv, file = paste0(caseDir, "Ypvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
-   write.table(rpv.l$Ypv, file = paste0(caseDir, "Ypvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(rpv.g$Yp, file = paste0(caseDir, "Ypvg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   write.table(rpv.l$Yp, file = paste0(caseDir, "Ypvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
    write.table(Dg, file = paste0(caseDir, "Dg", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
    write.table(Dl, file = paste0(caseDir, "Dl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
 }
