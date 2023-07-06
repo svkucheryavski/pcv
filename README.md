@@ -1,7 +1,7 @@
 # Procrustes cross-validation
 
 
-<img src="logo.png" width="75" height="75" align="left" style="padding-right:10px;">
+<img src="logo.png" width="75" height="75" style="float:left;padding-right:10px;">
 Procrustes cross-validation (PCV) is a new approach for validation of chemometric models. It generates a new dataset, named *PV-set*, which can be used for validation of PCA/SIMCA/PCR/PLS models in the same way as with an independent validation set.
 
 This repository contains source code with implementation of Procrustes cross-validation for R and MATLAB as well as some practical details. There are two versions of the method:
@@ -10,15 +10,19 @@ This repository contains source code with implementation of Procrustes cross-val
 
 2. The *new* version was created in 2022 as a generalization of the original approach. The new version is much faster and can also work with regression models (e.g. PCR, PLS1, PLS2). Paper [3] describes the new method.
 
-Some practical details about how to use PCV are given below.
+Some practical details about how to use PCV are given below. If you do neither use R nor MATLAB you can apply PCV to your own data via an interactive web-application: [https://mda.tools/pcv/](https://mda.tools/pcv/). The application takes your data as a CSV file (in case of regression first column must contain the response values), it does all calculations in your browser and does not send any information to server.
+
+## Release notes
+
+Last version (for R and for MATLAB) was released 6th of July, 2023 and contains small improvements, possibility to use local centering and scaling. No breaking changes has been introduced.
 
 ## How to use PCV in R
 
-We have created a dedicated R package, `pcv`, which contains all PCV functions, you can install it directly from CRAN by running `install.packages("pcv")`. You can also download the package file from [Releases](https://github.com/svkucheryavski/pcv/releases) and install from the file.
+There is a dedicated R package, `pcv`, which contains all PCV functions, you can install it directly from CRAN by running `install.packages("pcv")`. You can also download the package file from [Releases](https://github.com/svkucheryavski/pcv/releases) and install from the file.
 
 There are four main functions in the package:
 
-* `pcv()` is implementation of the original version, we keep it for compatibility, if you consider using PCV a new project, do not use it, use the new version.
+* `pcv()` is implementation of the original version, that was published in 2020. We keep this version for compatibility. In 2023 we improved the algorithm and this version is now deprecated and to be removed later.
 
 * `pcvpca()` is implementation of the new version for PCA/SIMCA models.
 
@@ -28,7 +32,7 @@ There are four main functions in the package:
 
 All four functions return PV-set generated with a given parameters, which has the same size as the calibration set. In case of regression PV-set is generated only for predictors (X), the response values for PV-set are the same as for the calibration set.
 
-The last two functions return the PV-set with additional attribute, `"D"` which is matrix containing scaling factors ($c_k/c$), for each segment and each component. See all details in the paper [3]. The matrix can be visualized as a heatmap, similar to shown in the paper, using method `plotD()` which is also a part of the package.
+The last two functions return the PV-set with additional attribute, `"D"` which is matrix containing scaling factors ($c_k/c$), for each segment and each component. See all details in the paper [3]. The matrix can be visualized as a heatmap, similar to the ones shown in the paper, using method `plotD()` which is also a part of the package.
 
 Below are examples of the functions syntax with all parameters:
 
@@ -42,12 +46,12 @@ Xpv <- pcvpcr(X, y, ncomp = 20, center = TRUE, scale = FALSE, cv = list("ven", 4
 # for PLS models
 Xpv <- pcvpls(X, y, ncomp = 20, center = TRUE, scale = FALSE, cv = list("ven", 4))
 
-# get matrix D and show its values as boxplot
-D <- attr(Xpv, "D")
-boxplot(D)
-
 # show heatmap for D values
 plotD(Xpv)
+
+# get the matrix D and show its values as boxplot
+D <- attr(Xpv, "D")
+boxplot(D)
 ```
 
 Here `X` is a matrix with predictors for your calibration set (as a numerical matrix, not a data frame). In case of regression model you also need to provide a vector or a matrix with response values for the training set, `y`. As mentioned above, the method generates PV-set only for predictors, the response values for the calibration set and for the PV-set are the same.
@@ -74,7 +78,7 @@ All functions for running PCV in MATLAB are combined into a dedicated Toolbox wh
 
 You can also download the toolbox as `.mtlbx` file from [Releases](https://github.com/svkucheryavski/pcv/releases) section and install it from file.
 
-The Toolbox has Getting started tutorial, where you can see the examples of code and try them.
+The Toolbox has "Getting started" tutorial, where you can see the examples of code and try them.
 
 Below you will also find a very short description of main functions:
 
@@ -93,7 +97,7 @@ Here `X` is a matrix with predictors for your calibration set (as a numerical ma
 
 The next parameter (shown as 20 in the examples above) is a number of principal components in case of PCA/PCR models or number of latent variables in PLS model. Number of components must be large enough, larger than the expected optimal number. In case of PCA use components which explain at least 99% of the data.
 
-Next two parameters with logical values define if the predictors must be mean centered and/or standardized. By default `Center` is set to `true` and `Scale` is set to  `false` as in the examples above. Regardless which settings you use the resulted PV-set will be in original units (uncentered and unstandardized), so you can compare it directly with calibration set.
+Next two parameters with logical values define if the predictors must be mean centered and/or standardized. By default `Center` is set to `true` and `Scale` is set to  `false` as in the examples above. Regardless which settings you use, the resulted PV-set will be in original units (uncentered and unstandardized), so you can compare it directly with calibration set.
 
 Finally, the last parameter defines how to split the rows of the training set. The split is similar to cross-validation splits, as PCV is based on cross-validation. This parameter can have the following values:
 
@@ -107,7 +111,7 @@ File `demo.m` contains a demo code based on *Corn* dataset from the paper to be 
 
 ## References
 
-Papers [1] and [2] describe the original version, paper [3] — the new version.
+Paper [1] describes the original version, paper [2] — shows some practical examples for SIMCA, paper [3] — introduces the new version. Please cite the paper [3] if you use PCV in your projects.
 
 1. Kucheryavskiy, S., Zhilin, S., Rodionova, O., & Pomerantsev, A. *Procrustes Cross-Validation—A Bridge between Cross-Validation and Independent Validation Sets.* Analytical Chemistry,  92 (17), 2020. pp.11842–11850. DOI: [10.1021/acs.analchem.0c02175](https://doi.org/10.1021/acs.analchem.0c02175)
 
@@ -118,6 +122,6 @@ Papers [1] and [2] describe the original version, paper [3] — the new version.
 
 ## Bugs and improvements
 
-The code will be improved and extended gradually. If you found a bug please report using issues or send an email.
+The code will be improved and extended gradually. If you found a bug please report using [issues](https://github.com/svkucheryavski/pcv/issues) or send an email.
 
 
