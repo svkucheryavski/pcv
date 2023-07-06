@@ -3,7 +3,7 @@
 ####################################
 
 ## directory to keep CSV files with reference values
-caseDir <- "../../../References/"
+caseDir <- "../../../References/pcvpcr/"
 
 setup({
    #pdf(file = tempfile("pcv-test-pcr-", fileext = ".pdf"))
@@ -267,7 +267,7 @@ runtests <- function(X, Y, saveRes = FALSE) {
       expect_true(all(Dl > -100))
 
       # save outcomes as reference
-      if (saveRes) {
+      if (saveRes && cv[[1]] != "rand") {
          savereferences(rpv.g, rpv.l, Dg, Dl, center, scale, ncomp, cv)
       }
 

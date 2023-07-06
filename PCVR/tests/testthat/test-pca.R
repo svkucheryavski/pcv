@@ -5,7 +5,7 @@
 # global settings
 
 ## directory to keep CSV files with reference values
-caseDir <- "../../../References/"
+caseDir <- "../../../References/pcvpca/"
 
 setup({
    #pdf(file = tempfile("pcv-test-pca-", fileext = ".pdf"))
@@ -188,7 +188,7 @@ pcacvlocal <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven"
 }
 
 #' Save results as reference values
-savereferences <- function(rcv.g, rcv.l, rpv.g, rpv.l, center, scale, ncomp, cv) {
+savereferences <- function(rpv.g, rpv.l, center, scale, ncomp, cv) {
    cvText <- if (length(cv) == 2) paste0(cv[[1]], cv[[2]]) else cv[[1]]
    caseSuffix <- sprintf("-%d-%s-%s-%s.csv", ncomp, center, scale, cvText)
 
@@ -197,7 +197,7 @@ savereferences <- function(rcv.g, rcv.l, rpv.g, rpv.l, center, scale, ncomp, cv)
    write.table(rpv.l$Q, file = paste0(caseDir, "Qpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
    write.table(rpv.l$H, file = paste0(caseDir, "Hpvl", caseSuffix), col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
 }
-$
+
 #' Run tests for different combinations of parameters
 runtests <- function(X, saveRes = FALSE) {
 
@@ -240,7 +240,7 @@ runtests <- function(X, saveRes = FALSE) {
       expect_equivalent(rcv.l$Q, rpv.l$Q)
 
       # save outcomes as reference
-      if (saveRes) {
+      if (saveRes && cv[[1]] != "rand") {
          savereferences(rpv.g, rpv.l, center, scale, ncomp, cv)
       }
    }
