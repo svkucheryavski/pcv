@@ -166,9 +166,10 @@ function compareWithReferences(testCase, X)
                   cvString = sprintf("%s%d", cvString, cv{1}{2});
                end
                
-               caseDir = "../References/";
+               caseDir = "../References/pcvpca/";
                bString = {"FALSE", "TRUE"};
                fileSuffix = sprintf("-%d-%s-%s-%s.csv", ncomp, bString{center + 1}, bString{scale + 1}, cvString);
+               
                verifyEqual(testCase, Qpvg, csvread(strcat(caseDir, "Qpvg", fileSuffix)), 'RelTol', 10^-6)
                verifyEqual(testCase, Hpvg, csvread(strcat(caseDir, "Hpvg", fileSuffix)), 'RelTol', 10^-6)
                verifyEqual(testCase, Qpvl, csvread(strcat(caseDir, "Qpvl", fileSuffix)), 'RelTol', 10^-6)
