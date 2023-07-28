@@ -1,0 +1,93 @@
+<deployment-project plugin="plugin.toolbox" plugin-version="1.0">
+  <configuration build-checksum="2541425316" file="/Users/svkucheryavski/Documents/Developing/pcv/MATLAB/pcv.prj" location="/Users/svkucheryavski/Documents/Developing/pcv/MATLAB" name="pcv" target="target.toolbox" target-name="Package Toolbox">
+    <param.appname>Procrustes cross-validation</param.appname>
+    <param.authnamewatermark>Sergey Kucheryavskiy</param.authnamewatermark>
+    <param.email>svkucheryavski@gmail.com</param.email>
+    <param.company />
+    <param.summary>Set of methods for generating Procrustes validation sets for PCA/SIMCA, PCR and PLS models.</param.summary>
+    <param.description>Procrustes cross-validation is a new approach for validation of chemometric models. It makes possible to generate a new dataset, named "PV-set" and use it for validation of models in the same way as with an independent validation set. The current implementation supports Principal Component Analysis (method "pcvpca()", Principal Component Regression (method "pcvpcr()") and Partial Least Squares (method "pcvpls()") models.
+
+Check Getting started documentation and see more details here: https://github.com/svkucheryavski/pcv.</param.description>
+    <param.screenshot>/Users/svkucheryavski/Documents/Developing/pcv/logo.png</param.screenshot>
+    <param.version>1.1.0</param.version>
+    <param.output>${PROJECT_ROOT}/Procrustes cross-validation.mltbx</param.output>
+    <param.products.name />
+    <param.products.id />
+    <param.products.version />
+    <param.platforms />
+    <param.guid>29122b16-1d7b-4a42-aa54-b66a9654c313</param.guid>
+    <param.exclude.filters>% List files contained in your toolbox folder that you would like to exclude
+% from packaging.  Excludes should be listed relative to the toolbox folder.
+% Some examples of how to specify excludes are provided below:
+%
+% A single file in the toolbox folder:
+% .svn
+%
+% A single file in a subfolder of the toolbox folder:
+% example/.svn
+%
+% All files in a subfolder of the toolbox folder:
+% example/*
+%
+% All files of a certain name in all subfolders of the toolbox folder:
+% **/.svn
+%
+% All files matching a pattern in all subfolders of the toolbox folder:
+% **/*.bak
+%
+*.asv
+.DS_Store</param.exclude.filters>
+    <param.examples />
+    <param.demosxml />
+    <param.apps />
+    <param.docs />
+    <param.matlabpath.excludes />
+    <param.javaclasspath.excludes />
+    <unset>
+      <param.authnamewatermark />
+      <param.email />
+      <param.company />
+      <param.output />
+      <param.products.name />
+      <param.products.id />
+      <param.products.version />
+      <param.platforms />
+      <param.examples />
+      <param.demosxml />
+      <param.apps />
+      <param.docs />
+      <param.matlabpath.excludes />
+      <param.javaclasspath.excludes />
+    </unset>
+    <fileset.rootdir>
+      <file>/Users/svkucheryavski/Documents/Developing/pcv/PCVMATLAB</file>
+    </fileset.rootdir>
+    <fileset.rootfiles />
+    <fileset.depfun.included />
+    <fileset.depfun.excluded />
+    <fileset.package />
+    <build-deliverables>
+      <file location="/Users/svkucheryavski/Documents/Developing/pcv/MATLAB" name="Procrustes cross-validation.mltbx" optional="false">/Users/svkucheryavski/Documents/Developing/pcv/MATLAB/Procrustes cross-validation.mltbx</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/Applications/MATLAB_R2017a.app</root>
+      <toolboxes />
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>true</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>10.16</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>maci64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
