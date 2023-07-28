@@ -131,7 +131,7 @@ function compareWithReferences(testCase, X)
                cvString = sprintf("%s%d", cvString, cv{1}{2});
             end
                
-            caseDir = "../Test outcomes/pcvpca/";
+            caseDir = "../.tests/pcvpca/";
             bString = {"FALSE", "TRUE"};
             fileSuffix = sprintf("-%d-%s-%s.csv", ncomp, bString{scale + 1}, cvString);
                

@@ -95,7 +95,7 @@ function compareWithReferences(testCase, X, Y)
                cvString = sprintf("%s%d", cvString, cv{1}{2});
             end
 
-            caseDir = "../Test outcomes/pcvpls/";
+            caseDir = "../.tests/pcvpls/";
             bString = {"FALSE", "TRUE"};
             fileSuffix = sprintf("-%d-%s-%s.csv", ncomp, bString{scale + 1}, cvString);
 
@@ -108,32 +108,6 @@ function compareWithReferences(testCase, X, Y)
    end
 end
 
-function runOne(testCase, X, Y, ncomp, cv, center, scale, scope)
-% run tests for a given combination of parameters
-
-   if scope == 'local'
-      fcv = @plscvlocal;
-   else
-      fcv = @plscvglobal;
-   end
-
-   rng(42)
-   Xpv = pcvpls(X, Y, ncomp, center, scale, cv, scope);    
-
-   rng(42)
-   [Ycv, RMSECV] = fcv(X, Y, ncomp, center, scale, cv);       
-   [Ypv, RMSEPV] = plspv(X, Y, Xpv, ncomp, center, scale);
-      
-   if scope == "global"
-      RelTol = 10^-5;
-      verifyEqual(testCase, Ypv, Ycv, 'RelTol', RelTol);
-      verifyEqual(testCase, RMSECV, RMSEPV, 'RelTol', RelTol);   
-   else
-      RelTol = 0.05;
-      verifyEqual(testCase, RMSECV, RMSEPV, 'RelTol', RelTol);   
-   end
-   
-end
 
 function [Ypv, RMSEPV] = plspv(X, Y, Xpv, ncomp, center, scale)
 %PCAPCV fit a global PCA model for X dataset and then applies it to Xpv
