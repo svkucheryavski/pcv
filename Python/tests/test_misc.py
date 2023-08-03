@@ -4,20 +4,7 @@ import numpy as np
 import numpy.testing
 import math
 
-from src.pcv.misc import get_xpvorth, get_cvncomp, get_cvsettings
-
-class TestXpvOrthMethods(unittest.TestCase):
-
-    def test_getxpvorth(self):
-        Xk = np.array([[1., 2], [3, 4], [5, 6], [7, 8]])
-        qk = np.array([1., 2, 4, 6])
-        P = np.array([math.sqrt(2), -math.sqrt(2)])
-        RPM = np.eye(2) - np.dot(P, np.transpose(P))
-        Y = get_xpvorth(qk, Xk, RPM)
-
-        self.assertEqual(Y.shape, Xk.shape)
-        np.testing.assert_array_almost_equal((Y * Y).sum(axis = 1), qk)
-
+from src.pcv.misc import get_cvncomp, get_cvsettings
 
 class TestCVMethods(unittest.TestCase):
 

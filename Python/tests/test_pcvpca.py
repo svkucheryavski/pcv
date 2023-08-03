@@ -5,11 +5,11 @@ import itertools
 import math
 import os
 
-from src.pcv.pcvpca import pcvpca, get_pcamodel
+from src.pcv.methods import pcvpca, get_pcamodel, get_xpvorth
 
-def pca_predict(X, Xt, ncomp: int, center: bool = True, scale: bool = False):
+def pca_predict(X: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True, scale: bool = False):
     """
-    Create a global PCA model using dataset "X", applies this model to dataset "Xt"
+    Create a global PCA model using dataset "Xc", applies this model to dataset "Xpv"
     and return matrices with scoures (T), score distance (H) and orthogonal distance (Q).
     """
 
@@ -24,22 +24,22 @@ def pca_predict(X, Xt, ncomp: int, center: bool = True, scale: bool = False):
     P, s = get_pcamodel(X, ncomp)
 
     # apply the model
-    Xt = (Xt - mX) / sX
-    T = np.dot(Xt, P)
-    U = T / (s / math.sqrt(nrows - 1))
+    Xpv = (Xpv - mX) / sX
+    Tpv = np.dot(Xpv, P)
+    Upv = Tpv / (s / math.sqrt(nrows - 1))
 
-    H = np.zeros((nrows, ncomp))
-    Q = np.zeros((nrows, ncomp))
+    Hpv = np.zeros((nrows, ncomp))
+    Qpv = np.zeros((nrows, ncomp))
 
     for a in range(1, ncomp + 1):
         Pa = P[..., :a]
-        Ta = T[..., :a]
-        Ua = U[..., :a]
-        Ea = Xt - np.dot(Ta, np.transpose(Pa))
-        Q[..., a - 1] = (Ea * Ea).sum(axis = 1)
-        H[..., a - 1] = (Ua * Ua).sum(axis = 1)
+        Tpva = Tpv[..., :a]
+        Upva = Upv[..., :a]
+        Epva = Xpv - np.dot(Tpva, np.transpose(Pa))
+        Qpv[..., a - 1] = (Epva * Epva).sum(axis = 1)
+        Hpv[..., a - 1] = (Upva * Upva).sum(axis = 1)
 
-    return {'T': T, 'H': H, 'Q': Q}
+    return {'T': Tpv, 'H': Hpv, 'Q': Qpv}
 
 
 
@@ -239,7 +239,7 @@ class TestPCVPCAMethods(unittest.TestCase):
             not os.path.exists('../.tests/pcvpca'):
 
             print('can not find reference files, skipping.')
-
+            return
 
         X = np.genfromtxt('../.tests/data/corn.csv', delimiter=',')[:, 1:]
 
@@ -252,6 +252,22 @@ class TestPCVPCAMethods(unittest.TestCase):
         for ncomp, cv, scale in all_cases:
             test_pcacase_ref(X, ncomp, cv = cv, center = True, scale = scale)
 
+
+
+class TestXpvOrthMethods(unittest.TestCase):
+
+    def test_getxpvorth(self):
+        """
+        Test of method which compute orthogonal part of Xpv.
+        """
+        Xk = np.array([[1., 2], [3, 4], [5, 6], [7, 8]])
+        qk = np.array([1., 2, 4, 6])
+        P = np.array([math.sqrt(2), -math.sqrt(2)])
+        RPM = np.eye(2) - np.dot(P, np.transpose(P))
+        Y = get_xpvorth(qk, Xk, RPM)
+
+        self.assertEqual(Y.shape, Xk.shape)
+        np.testing.assert_array_almost_equal((Y * Y).sum(axis = 1), qk)
 
 
 if __name__ == '__main__':

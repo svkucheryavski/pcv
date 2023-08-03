@@ -8,40 +8,6 @@ import math
 
 
 
-def get_xpvorth(qk: np.array, Xk: np.array, PRM: np.array):
-    """
-    Generate the orthogonal part for Xpv.
-
-    Parameters:
-    -----------
-    qk : ndarray
-        Vector with orthogonal distances for cross-validation set for segment k.
-    Xk : ndarray
-        Matrix with local validation set for segment k
-    PRM : ndarray
-        Projecton matrix for orthogonalization of residuals
-
-    Returns:
-    --------
-    ndarray
-        A matrix with orthogonal part for Xpv
-    """
-
-    nobj = qk.size
-
-    # project Xk to a set of random vectors and normalize columns
-    Z = np.random.randn(nobj, nobj)
-    Xpv_orth = np.dot(Z, Xk)
-    Xpv_orth = Xpv_orth / np.linalg.norm(Xpv_orth, axis = 0)
-
-    # orthogonalize and rescale rows so sum of their squares is the same as qk
-    Xpv_orth = np.dot(Xpv_orth, PRM)
-    Xpv_orth = Xpv_orth * (np.sqrt(qk) / np.linalg.norm(Xpv_orth, axis = 1)).reshape(-1, 1)
-
-    return Xpv_orth
-
-
-
 def get_splits(nrows: int, nseg: int):
     """
     Generate vector with segment numbers.
@@ -98,7 +64,7 @@ def get_cvsettings_ven(nrows:int, ncomp:int, nseg:int, resp:np.ndarray):
 
     # shuffle and return the indices and other settings
     cvind = get_splits(nrows, nseg)
-    row_ind = np.argsort(np.argsort(resp))
+    row_ind = np.argsort(np.argsort(resp.flatten(), kind = 'mergesort'), kind = 'mergesort')
     return (cvind[row_ind], get_cvncomp(nrows, ncomp, nseg), nseg)
 
 
