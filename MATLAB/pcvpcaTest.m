@@ -139,6 +139,7 @@ function compareWithReferences(testCase, X)
             verifyEqual(testCase, Hpvg, csvread(strcat(caseDir, "Hpvg", fileSuffix)), 'RelTol', 10^-6)
             verifyEqual(testCase, Qpvl, csvread(strcat(caseDir, "Qpvl", fileSuffix)), 'RelTol', 10^-6)
             verifyEqual(testCase, Hpvl, csvread(strcat(caseDir, "Hpvl", fileSuffix)), 'RelTol', 10^-6)
+                        
          end
       end
    end

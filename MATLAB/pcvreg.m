@@ -26,7 +26,7 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
 
    % compute indices for cross-validation
    ind = crossval(CV, nRows, Y);
-
+   
    % compute number of segments
    nSeg = max(ind);
 
@@ -62,18 +62,17 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
    % coefficients
    Xpv = zeros(nRows, nPred);
    D = zeros(nSeg, nComp);
-
+   
    % loop for computing the PV set
    for k = 1:nSeg
 
       % split data to calibration and validation
       indc = ind ~= k;
       indk = ind == k;
-
+      
       Xk = X(indk, :);
       Xc = X(indc, :);
       Yc = Y(indc, :);
-
       
       % autoscale data in case of local scope
       if CVScope == "local"

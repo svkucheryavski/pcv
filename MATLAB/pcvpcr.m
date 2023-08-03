@@ -77,6 +77,7 @@ function [Xpv, D] = pcvpcr(X, Y, nComp, Center, Scale, CV, CVScope)
    function mk = getlocalmodel(Xc, Yc, m)
       [~, ~, Pk] = svds(Xc, m.nComp);
       aa = acos(sum(m.P .* Pk)) < (pi / 2);
+      
       Pk = Pk * diag(aa * 2 - 1);
       Tc = Xc * Pk;
       Ck = (Tc' * Tc)' \ (Tc' * Yc);      

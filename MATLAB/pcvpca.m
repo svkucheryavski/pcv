@@ -125,7 +125,7 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
       Ek = Xk - Tk * Pk';
       qk = sum(Ek.^2, 2);
       Xpvorth = getxpvorth(qk, Xk, Pi);
-
+      
       % rotate the local validation set and save as a part of Xpv
       Xpv(indk, :) = Xpvorth + Xpvpar;      
    end
