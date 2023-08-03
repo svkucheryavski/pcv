@@ -6,4 +6,5 @@
 .Renviron
 test.m
 test.R
-
+node_modules
+__pycache__
