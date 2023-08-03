@@ -51,7 +51,8 @@
 #'
 #' @references
 #' 1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-#' regression models. Submitted, 2022.
+#' regression models. Analytica Chimica Acta, 1255 (2022)
+#' [https://doi.org/10.1016/j.aca.2023.341096]
 #'
 #' @examples
 #'

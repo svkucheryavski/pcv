@@ -13,7 +13,7 @@
 #' @param cv
 #' which split method to use for cross-validation (see description of method `pcvpls()` for details).
 #' @param funlist
-#' list with functions for particular implementatio
+#' list with functions for particular implementation
 #' @param cv.scope
 #' scope for center/scale operations inside CV loop: 'global' — using globally computed mean and std
 #' or 'local' — recompute new for each local calibration set.
