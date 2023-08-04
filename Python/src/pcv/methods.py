@@ -456,7 +456,7 @@ def pcvpca(X: np.ndarray,
 
 def get_pcamodel(X: np.ndarray, ncomp: int) -> dict:
     """ Create PCA model by using SVD and truncating loadings and singular values. """
-    U, s, V = np.linalg.svd(X, full_matrices=False)
+    U, s, V = svd(X, full_matrices=False)
     return (V[:ncomp, ...].T, s[:ncomp])
 
 
