@@ -1,8 +1,8 @@
 import numpy as np
 import unittest
 
-from src.pcv.misc import get_cvsettings
-from src.pcv.methods import pcvpls, simpls
+from src.prcv.misc import get_cvsettings
+from src.prcv.methods import pcvpls, simpls
 from .common import test_reference_cases
 
 

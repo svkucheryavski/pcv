@@ -3,7 +3,7 @@ import numpy as np
 import unittest
 import math
 
-from src.pcv.methods import pcvpca, get_pcamodel, get_xpvorth
+from src.prcv.methods import pcvpca, get_pcamodel, get_xpvorth
 from .common import test_reference_cases
 
 

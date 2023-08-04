@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing
 import math
 
-from src.pcv.misc import get_cvncomp, get_cvsettings
+from src.prcv.misc import get_cvncomp, get_cvsettings
 
 class TestCVMethods(unittest.TestCase):
 

@@ -2,8 +2,8 @@ import numpy as np
 import unittest
 import math
 
-from src.pcv.misc import get_cvsettings
-from src.pcv.methods import pcvpcr, get_pcamodel
+from src.prcv.misc import get_cvsettings
+from src.prcv.methods import pcvpcr, get_pcamodel
 from .common import test_reference_cases
 
 
