@@ -40,7 +40,7 @@ def pca_predict(X: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True,
         Pa = P[..., :a]
         Tpva = Tpv[..., :a]
         Upva = Upv[..., :a]
-        Epva = Xpv - np.dot(Tpva, np.transpose(Pa))
+        Epva = Xpv - np.dot(Tpva, Pa.T)
         Qpv[..., a - 1] = (Epva * Epva).sum(axis = 1)
         Hpv[..., a - 1] = (Upva * Upva).sum(axis = 1)
 
