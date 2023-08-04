@@ -1,12 +1,12 @@
 # Procrustes cross-validation for Python
 
-Package `pcv` implements [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in Python language.
+Package `prcv` implements [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in Python language.
 
 Last version of the package (*1.0.0*) was released 8th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
-You can install the package directly from PyPI by running `pip install pcv`. If you already have the package installed and want to upgrade it to the newest version use: `pip install pcv --upgrade`
+You can install the package directly from PyPI by running `pip install prcv`. If you already have the package installed and want to upgrade it to the newest version use: `pip install prcv --upgrade`
 
 There are three main functions in the package:
 
@@ -23,14 +23,19 @@ The last two functions return the PV-set and an additional outcome, `D`, which i
 Below are examples of the function syntax with main parameters:
 
 ```python
+from prcv.methods import pcvpca, pcvpcr, pcvpls
+
+# set cross-validation settings — common for all methods above
+cv = {'type': 'ven', 'nseg': 4}
+
 # for PCA/SIMCA models
-Xpv = pcvpca(X, ncomp = 20, center = True, scale = False, cv = {'type': 'ven', 'nseg': 4})
+Xpv = pcvpca(X, ncomp = 20, center = True, scale = False, cv = cv)
 
 # for PCR models
-Xpv, D = pcvpcr(X, Y, ncomp = 20, center = True, scale = False, cv = {'type': 'ven', 'nseg': 4})
+Xpv, D = pcvpcr(X, Y, ncomp = 20, center = True, scale = False, cv = cv)
 
 # for PLS models
-Xpv, D = pcvpls(X, Y, ncomp = 20, center = True, scale = False, cv = {'type': 'ven', 'nseg': 4})
+Xpv, D = pcvpls(X, Y, ncomp = 20, center = True, scale = False, cv = cv)
 ```
 
 Here `X` is a matrix with predictors for your calibration set (2D Numpy array). In case of regression model you also need to provide an array with response values for the training set, `Y`. The method generates PV-set only for predictors, the response values for the calibration set and for the PV-set are the same.
@@ -52,7 +57,7 @@ As it is written above there is also additional parameter, `cvscope`, which can 
 Xpv, D = pcvpls(X, Y, ncomp = 20,  cv = {'type': 'ven', 'nseg': 4}, cvscope = 'local')
 ```
 
-File `demo.py`, which you can download from this repository contains a demo code based on *Corn* dataset from the [published paper](https://doi.org/10.1016/j.aca.2023.341096). See comments in the code for more details.
+File `demo.py`, which you can download from [GitHub repository](https://github.com/svkucheryavski/pcv/Python) contains a demo code based on *Corn* dataset from the [published paper](https://doi.org/10.1016/j.aca.2023.341096). See comments in the code for more details.
 
 The package code will be improved and extended gradually. If you found a bug please report using [issues](https://github.com/svkucheryavski/pcv/issues) or send an email.
 
