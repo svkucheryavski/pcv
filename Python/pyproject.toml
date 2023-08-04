@@ -3,8 +3,8 @@ requires = ["hatchling", "numpy", "scipy"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pcv"
-version = "1.0.0"
+name = "prcv"
+version = "1.0.1"
 authors = [
   { name="Sergey Kucheryavskiy", email="svkucheryavski@gmail.com" },
 ]
