@@ -1,15 +1,20 @@
 import numpy as np
-
 import unittest
-import itertools
-import math
-import os
 
 from src.pcv.misc import get_cvsettings
 from src.pcv.methods import pcvpls, simpls
+from .common import test_reference_cases
+
+
+
+################################
+# Helper functions             #
+################################
 
 def scale(X:np.ndarray) -> np.ndarray:
+    """ Autoscale columns of X. """
     return (X - X.mean(axis = 0)) / X.std(axis = 0, ddof = 1)
+
 
 def pls_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True, scale: bool = False):
     """
@@ -36,25 +41,39 @@ def pls_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, cente
 
     # create a global model
     R, P, C = simpls(X, Y, ncomp)
+    T = np.dot(X, R)
+    eigenvals = (T * T).sum(axis = 0) / (nrows - 1)
 
     # apply the model
     Xpv = (Xpv - mX) / sX
     Tpv = np.dot(Xpv, R)
+    Upv = Tpv / np.sqrt(eigenvals)
 
     Ypv = np.zeros((nrows, ncomp))
+    Hpv = np.zeros((nrows, ncomp))
+    Qpv = np.zeros((nrows, ncomp))
+
+    # make predictions for a = 1...ncomp components in a model
     for a in range(1, ncomp + 1):
+        Pa = P[..., :a]
         Ca = C[..., :a]
+
         Tpva = Tpv[..., :a]
+        Upva = Upv[..., :a]
+        Epva = Xpv - np.dot(Tpva, np.transpose(Pa))
+
+        Qpv[..., a - 1] = (Epva * Epva).sum(axis = 1)
+        Hpv[..., a - 1] = (Upva * Upva).sum(axis = 1)
         Ypv[..., a - 1] = np.dot(Tpva, np.transpose(Ca)).flatten()
+
 
     Ypv = Ypv * sY + mY
     Epv = Ypv - Y
 
-    return {'Yp': Ypv, 'T': Tpv, 'RMSE': np.sqrt((Epv * Epv).mean(axis = 0))}
+    return {'Yp': Ypv, 'T': Tpv, 'H': Hpv, 'Q': Qpv, 'RMSE': np.sqrt((Epv * Epv).mean(axis = 0))}
 
 
-
-def test_plscase(X, Y, ncomp, cv, center, scale, D, T, Yp):
+def test_plscase(X, Y, ncomp, cv, center, scale, D, T, H, Yp):
     """
     Create PLS global model, apply it to generated Xpv set and test equality of
     main outcomes (predictions and errors) entered manually from R tests.
@@ -62,39 +81,49 @@ def test_plscase(X, Y, ncomp, cv, center, scale, D, T, Yp):
     cvind, cvncomp, cvnseg = get_cvsettings(cv, X.shape[0], ncomp, Y[..., :1])
     Xpv, Dpv = pcvpls(X, Y, ncomp, center = center, scale = scale, cv = cv)
     r = pls_predict(X, Y, Xpv, cvncomp, center = center, scale = scale)
+
     np.testing.assert_array_almost_equal(Dpv, np.array(D).reshape(cvnseg, cvncomp), decimal = 5)
     np.testing.assert_array_almost_equal(r['Yp'], np.array(Yp).reshape(X.shape[0], cvncomp), decimal = 5)
     np.testing.assert_array_almost_equal(r['T'], np.array(T).reshape(X.shape[0], cvncomp), decimal = 5)
+    np.testing.assert_array_almost_equal(r['H'], np.array(H).reshape(X.shape[0], cvncomp), decimal = 5)
 
 
-
-def test_plscase_ref(X, Y, ncomp, cv, center, scale):
+def test_plscase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
     """
     Create PLS global model, apply it to generated Xpv set and test equality of
     main outcomes (predictions and scalars) taken from a
     reference file generated from R tests
     """
 
-    file_suffix = '-' + str(ncomp) + '-' + str(scale).upper() + '-' + \
-        (cv['type'] + str(cv['nseg']) if 'nseg' in cv else cv['type']) + '.csv'
+    # read reference values for predicted responses (global and local scope)
+    Dg = np.genfromtxt(path + 'Dg' + file_suffix, delimiter=',', ndmin = 2)
+    Dl = np.genfromtxt(path + 'Dl' + file_suffix, delimiter=',', ndmin = 2)
 
-    Ypvg = np.genfromtxt('../.tests/pcvpls/Ypvg' + file_suffix, delimiter=',')
-    Dg = np.genfromtxt('../.tests/pcvpls/Dg' + file_suffix, delimiter=',')
-    Ypvl = np.genfromtxt('../.tests/pcvpls/Ypvl' + file_suffix, delimiter=',')
-    Dl = np.genfromtxt('../.tests/pcvpls/Dl' + file_suffix, delimiter=',')
+    # read reference values for predicted responses (global and local scope)
+    Ypvg = np.genfromtxt(path + 'Ypvg' + file_suffix, delimiter=',', ndmin = 2)
+    Ypvl = np.genfromtxt(path + 'Ypvl' + file_suffix, delimiter=',', ndmin = 2)
 
+    # compute PV-sets for global and local scope
     Xpvg, Dpvg = pcvpls(X, Y, ncomp, center = center, scale = scale, cv = cv, cvscope = 'global')
     Xpvl, Dpvl = pcvpls(X, Y, ncomp, center = center, scale = scale, cv = cv, cvscope = 'local')
 
+    # make predictions for each PV-set
     rg = pls_predict(X, Y, Xpvg, ncomp, center = center, scale = scale)
     rl = pls_predict(X, Y, Xpvl, ncomp, center = center, scale = scale)
 
-    np.testing.assert_array_almost_equal(Dpvg.flatten(), Dg.flatten())
-    np.testing.assert_array_almost_equal(Dpvl.flatten(), Dl.flatten())
-    np.testing.assert_array_almost_equal(rg['Yp'].flatten(), Ypvg.flatten())
-    np.testing.assert_array_almost_equal(rl['Yp'].flatten(), Ypvl.flatten())
+    # compare scalars with reference values
+    np.testing.assert_array_almost_equal(Dpvg, Dg)
+    np.testing.assert_array_almost_equal(Dpvl, Dl)
+
+    # compare predictions with reference values
+    np.testing.assert_array_almost_equal(rg['Yp'], Ypvg)
+    np.testing.assert_array_almost_equal(rl['Yp'], Ypvl)
 
 
+
+################################
+# Tests                        #
+################################
 
 class TestPCVPLSMethods(unittest.TestCase):
 
@@ -159,6 +188,16 @@ class TestPCVPLSMethods(unittest.TestCase):
                 0.3488912,  0.11874715,  0.8917092,
                 0.4663885,  0.04006119,  1.4380749,
             ],
+            H = [
+                1.3526935, 2.9489832,  3.033481,
+                0.6164554, 1.0673182,  1.612828,
+                0.2162068, 0.4206830,  2.244920,
+                0.6668503, 0.6762619, 32.614276,
+                0.4471680, 1.5788783,  1.858912,
+                0.2472311, 4.7329009,  5.741351,
+                0.8520756, 0.9507819,  6.516799,
+                1.5226279, 1.5338622, 16.010279,
+            ],
             Yp = [
                 33.89666, 32.59770, 32.54171,
                 35.55487, 34.86453, 35.00677,
@@ -172,36 +211,9 @@ class TestPCVPLSMethods(unittest.TestCase):
         )
 
 
-
-    def test_reference_cases(self):
-        """
-        Run several tests by combining PCV parameters and compare outcomes with
-        reference data from R.
-        """
-
-        # check if reference files exist
-        if  not os.path.exists('../.tests') or \
-            not os.path.exists('../.tests/data') or \
-            not os.path.exists('../.tests/data/corn.csv') or \
-            not os.path.exists('../.tests/pcvpls'):
-
-            print('can not find reference files, skipping.')
-            return
-
-
-        D = np.genfromtxt('../.tests/data/corn.csv', delimiter=',')
-        X = D[:, 1:]
-        Y = D[:, :1]
-
-        cv_cases = [{'type':'loo'}, {'type':'ven', 'nseg': 4}, {'type':'ven', 'nseg': 10}]
-        ncomp_cases = [1, 10, 20, 30]
-        scale_cases = [True, False]
-
-        # loop over all combinations of the parameters
-        all_cases = list(itertools.product(ncomp_cases, cv_cases, scale_cases))
-        for ncomp, cv, scale in all_cases:
-            test_plscase_ref(X, Y, ncomp, cv = cv, center = True, scale = scale)
-
+    def test_references(self):
+        """ Test combination of settings by comparing with reference values. """
+        test_reference_cases('pcvpls', test_plscase_ref)
 
 
 if __name__ == '__main__':

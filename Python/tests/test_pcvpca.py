@@ -1,11 +1,16 @@
 import numpy as np
 
 import unittest
-import itertools
 import math
-import os
 
 from src.pcv.methods import pcvpca, get_pcamodel, get_xpvorth
+from .common import test_reference_cases
+
+
+
+################################
+# Helper functions             #
+################################
 
 def pca_predict(X: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True, scale: bool = False):
     """
@@ -42,7 +47,6 @@ def pca_predict(X: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True,
     return {'T': Tpv, 'H': Hpv, 'Q': Qpv}
 
 
-
 def test_pcacase(X, ncomp, cv, center, scale, T, H, Q):
     """
     Create PCA global model, apply it to generated Xpv set and test equality of
@@ -57,41 +61,50 @@ def test_pcacase(X, ncomp, cv, center, scale, T, H, Q):
     np.testing.assert_array_almost_equal(r['Q'], np.array(Q).reshape(X.shape[0], ncomp))
 
 
-
-def test_pcacase_ref(X, ncomp, cv, center, scale):
+def test_pcacase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
     """
     Create PCA global model, apply it to generated Xpv set and test equality of
     main outcomes (scores, score distances and orthogonal distances) taken from a
-    reference file generated from R tests
+    reference file generated from R tests.
+
+    Parameter Y is not used but needed for compatibility.
     """
 
-    file_suffix = '-' + str(ncomp) + '-' + str(scale).upper() + '-' + \
-        (cv['type'] + str(cv['nseg']) if 'nseg' in cv else cv['type']) + '.csv'
+    # read reference values for orthogonal distances (global and local scope)
+    Qg = np.genfromtxt(path + 'Qpvg' + file_suffix, delimiter=',', ndmin = 2)
+    Ql = np.genfromtxt(path + 'Qpvl' + file_suffix, delimiter=',', ndmin = 2)
 
-    Qg = np.genfromtxt('../.tests/pcvpca/Qpvg' + file_suffix, delimiter=',')
-    Hg = np.genfromtxt('../.tests/pcvpca/Hpvg' + file_suffix, delimiter=',')
-    Ql = np.genfromtxt('../.tests/pcvpca/Qpvl' + file_suffix, delimiter=',')
-    Hl = np.genfromtxt('../.tests/pcvpca/Hpvl' + file_suffix, delimiter=',')
+    # read reference values for score distances (global and local scope)
+    Hg = np.genfromtxt(path + 'Hpvg' + file_suffix, delimiter=',', ndmin = 2)
+    Hl = np.genfromtxt(path + 'Hpvl' + file_suffix, delimiter=',', ndmin = 2)
 
+    # compute PV-sets for global and local scope
     Xpvg = pcvpca(X, ncomp, center = center, scale = scale, cv = cv, cvscope = 'global')
     Xpvl = pcvpca(X, ncomp, center = center, scale = scale, cv = cv, cvscope = 'local')
 
+    # make predictions for each PV-set
     rg = pca_predict(X, Xpvg, ncomp, center = center, scale = scale)
     rl = pca_predict(X, Xpvl, ncomp, center = center, scale = scale)
 
-    np.testing.assert_array_almost_equal(rg['Q'].reshape(X.shape[0], ncomp), Qg.reshape(X.shape[0], ncomp))
-    np.testing.assert_array_almost_equal(rg['H'].reshape(X.shape[0], ncomp), Hg.reshape(X.shape[0], ncomp))
-    np.testing.assert_array_almost_equal(rl['Q'].reshape(X.shape[0], ncomp), Ql.reshape(X.shape[0], ncomp))
-    np.testing.assert_array_almost_equal(rl['H'].reshape(X.shape[0], ncomp), Hl.reshape(X.shape[0], ncomp))
+    # compare orthogonal distances
+    np.testing.assert_array_almost_equal(rg['Q'], Qg)
+    np.testing.assert_array_almost_equal(rl['Q'], Ql)
+
+    # compare score distances
+    np.testing.assert_array_almost_equal(rg['H'], Hg)
+    np.testing.assert_array_almost_equal(rl['H'], Hl)
 
 
+
+################################
+# Tests                        #
+################################
 
 class TestPCVPCAMethods(unittest.TestCase):
 
     def setUp(self):
         self.X = np.array([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,
          22, 18, 4, 14, 13, 12, 1, 15]).reshape(3, 8).transpose()
-
 
 
     def test_case1(self):
@@ -137,7 +150,6 @@ class TestPCVPCAMethods(unittest.TestCase):
             ])
 
 
-
     def test_case2(self):
         """
         Test second case - 2 components + ven with 3 segments.
@@ -179,7 +191,6 @@ class TestPCVPCAMethods(unittest.TestCase):
                 110.9139196, 30.527747,
                 21.1133461,  0.929611
             ])
-
 
 
     def test_case3(self):
@@ -225,32 +236,9 @@ class TestPCVPCAMethods(unittest.TestCase):
         ])
 
 
-
-    def test_reference_cases(self):
-        """
-        Run several tests by combining PCV parameters and compare outcomes with
-        reference data from R.
-        """
-
-        # check if reference files exist
-        if  not os.path.exists('../.tests') or \
-            not os.path.exists('../.tests/data') or \
-            not os.path.exists('../.tests/data/corn.csv') or \
-            not os.path.exists('../.tests/pcvpca'):
-
-            print('can not find reference files, skipping.')
-            return
-
-        X = np.genfromtxt('../.tests/data/corn.csv', delimiter=',')[:, 1:]
-
-        cv_cases = [{'type':'loo'}, {'type':'ven', 'nseg': 4}, {'type':'ven', 'nseg': 10}]
-        ncomp_cases = [1, 10, 20, 30]
-        scale_cases = [True, False]
-
-        # loop over all combinations of the parameters
-        all_cases = list(itertools.product(ncomp_cases, cv_cases, scale_cases))
-        for ncomp, cv, scale in all_cases:
-            test_pcacase_ref(X, ncomp, cv = cv, center = True, scale = scale)
+    def test_references(self):
+        """ Test combination of settings by comparing with reference values. """
+        test_reference_cases('pcvpca', test_pcacase_ref)
 
 
 

@@ -1,12 +1,15 @@
 import numpy as np
-
 import unittest
-import itertools
 import math
-import os
 
 from src.pcv.misc import get_cvsettings
 from src.pcv.methods import pcvpcr, get_pcamodel
+from .common import test_reference_cases
+
+
+################################
+# Helper functions             #
+################################
 
 def pcr_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True, scale: bool = False):
     """
@@ -39,18 +42,27 @@ def pcr_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, cente
     # apply the model
     Xpv = (Xpv - mX) / sX
     Tpv = np.dot(Xpv, P)
+    Upv = Tpv / (s / math.sqrt(nrows - 1))
 
     Ypv = np.zeros((nrows, ncomp))
+    Hpv = np.zeros((nrows, ncomp))
+    Qpv = np.zeros((nrows, ncomp))
+
     for a in range(1, ncomp + 1):
+        Pa = P[..., :a]
         Ca = C[..., :a]
         Tpva = Tpv[..., :a]
+        Upva = Upv[..., :a]
+        Epva = Xpv - np.dot(Tpva, np.transpose(Pa))
+
+        Qpv[..., a - 1] = (Epva * Epva).sum(axis = 1)
+        Hpv[..., a - 1] = (Upva * Upva).sum(axis = 1)
         Ypv[..., a - 1] = np.dot(Tpva, np.transpose(Ca)).flatten()
 
     Ypv = Ypv * sY + mY
     Epv = Ypv - Y
 
-    return {'Yp': Ypv, 'T': Tpv, 'RMSE': np.sqrt((Epv * Epv).mean(axis = 0))}
-
+    return {'Yp': Ypv, 'T': Tpv, 'H': Hpv, 'Q': Qpv, 'RMSE': np.sqrt((Epv * Epv).mean(axis = 0))}
 
 
 def test_pcrcase(X, Y, ncomp, cv, center, scale, D, T, Yp):
@@ -66,38 +78,47 @@ def test_pcrcase(X, Y, ncomp, cv, center, scale, D, T, Yp):
     np.testing.assert_array_almost_equal(r['T'], np.array(T).reshape(X.shape[0], cvncomp), decimal = 5)
 
 
-
-def test_pcrcase_ref(X, Y, ncomp, cv, center, scale):
+def test_pcrcase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
     """
     Create PCR global model, apply it to generated Xpv set and test equality of
     main outcomes (predictions and scalars) taken from a
     reference file generated from R tests
     """
 
-    file_suffix = '-' + str(ncomp) + '-' + str(scale).upper() + '-' + \
-        (cv['type'] + str(cv['nseg']) if 'nseg' in cv else cv['type']) + '.csv'
+    # read reference values for predicted responses (global and local scope)
+    Ypvg = np.genfromtxt(path + 'Ypvg' + file_suffix, delimiter=',', ndmin = 2)
+    Ypvl = np.genfromtxt(path + 'Ypvl' + file_suffix, delimiter=',', ndmin = 2)
 
-    Ypvg = np.genfromtxt('../.tests/pcvpcr/Ypvg' + file_suffix, delimiter=',')
-    Dg = np.genfromtxt('../.tests/pcvpcr/Dg' + file_suffix, delimiter=',')
-    Ypvl = np.genfromtxt('../.tests/pcvpcr/Ypvl' + file_suffix, delimiter=',')
-    Dl = np.genfromtxt('../.tests/pcvpcr/Dl' + file_suffix, delimiter=',')
+    # read reference values for matrix with scalars (global and local scope)
+    Dg = np.genfromtxt(path + 'Dg' + file_suffix, delimiter=',', ndmin = 2)
+    Dl = np.genfromtxt(path + 'Dl' + file_suffix, delimiter=',', ndmin = 2)
 
+    # compute PV-sets for global and local scope
     Xpvg, Dpvg = pcvpcr(X, Y, ncomp, center = center, scale = scale, cv = cv, cvscope = 'global')
     Xpvl, Dpvl = pcvpcr(X, Y, ncomp, center = center, scale = scale, cv = cv, cvscope = 'local')
 
+    # make predictions for each PV-set
     rg = pcr_predict(X, Y, Xpvg, ncomp, center = center, scale = scale)
     rl = pcr_predict(X, Y, Xpvl, ncomp, center = center, scale = scale)
 
-    np.testing.assert_array_almost_equal(Dpvg.flatten(), Dg.flatten())
-    np.testing.assert_array_almost_equal(Dpvl.flatten(), Dl.flatten())
-    np.testing.assert_array_almost_equal(rg['Yp'].flatten(), Ypvg.flatten())
-    np.testing.assert_array_almost_equal(rl['Yp'].flatten(), Ypvl.flatten())
+    # compare scalars with reference values
+    np.testing.assert_array_almost_equal(Dpvg, Dg)
+    np.testing.assert_array_almost_equal(Dpvl, Dl)
+
+    # compare predictions with reference values
+    np.testing.assert_array_almost_equal(rg['Yp'], Ypvg)
+    np.testing.assert_array_almost_equal(rl['Yp'], Ypvl)
 
 
+
+################################
+# Tests                        #
+################################
 
 class TestPCVPCRMethods(unittest.TestCase):
 
     def setUp(self):
+        """ Set up simple data for manual test. """
         self.Y = np.array([32, 35, 36, 37, 42, 43, 43, 44]).reshape(8, 1)
         self.X = np.array([
             150, 41, 28000, 119,
@@ -111,11 +132,8 @@ class TestPCVPCRMethods(unittest.TestCase):
         ]).reshape(8, 4)
 
 
-
     def test_manual(self):
-        """
-        Test with manually entered reference values from R.
-        """
+        """ Test with manually entered reference values from R. """
 
         ncomp = 3
         cv = {'type': 'ven', 'nseg': 4}
@@ -152,37 +170,9 @@ class TestPCVPCRMethods(unittest.TestCase):
         )
 
 
-
-    def test_reference_cases(self):
-        """
-        Run several tests by combining PCV parameters and compare outcomes with
-        reference data from R.
-        """
-
-        # check if reference files exist
-        if  not os.path.exists('../.tests') or \
-            not os.path.exists('../.tests/data') or \
-            not os.path.exists('../.tests/data/corn.csv') or \
-            not os.path.exists('../.tests/pcvpcr'):
-
-            print('can not find reference files, skipping.')
-            return
-
-
-        D = np.genfromtxt('../.tests/data/corn.csv', delimiter=',')
-        X = D[:, 1:]
-        Y = D[:, :1]
-
-        cv_cases = [{'type':'loo'}, {'type':'ven', 'nseg': 4}, {'type':'ven', 'nseg': 10}]
-        ncomp_cases = [1, 10, 20, 30]
-        scale_cases = [True, False]
-
-        # loop over all combinations of the parameters
-        all_cases = list(itertools.product(ncomp_cases, cv_cases, scale_cases))
-        for ncomp, cv, scale in all_cases:
-            test_pcrcase_ref(X, Y, ncomp, cv = cv, center = True, scale = scale)
-
-
+    def test_references(self):
+        """ Test combination of settings by comparing with reference values. """
+        test_reference_cases('pcvpcr', test_pcrcase_ref)
 
 if __name__ == '__main__':
     unittest.main()
