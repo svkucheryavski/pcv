@@ -2,15 +2,15 @@
 
 This part of repository contains implementation of [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in MATLAB as a dedicated toolbox.
 
-Last version of the toolbox (*1.1.0*) was released 8th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details about this feature in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the toolbox (*1.1.0*) was released 12th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details about this feature in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
 All functions for running PCV in MATLAB are combined into a dedicated Toolbox which is available from Mathworks File Exchange repository ([direct link](https://se.mathworks.com/matlabcentral/fileexchange/121468-procrustes-cross-validation)). Alternatively you can click on "Add-Ons" button in MATLAB, select "Get Add-Ons", and search "Procrustes cross-validation".
 
-You can also download the toolbox as `.mtlbx` file from [Releases](https://github.com/svkucheryavski/pcv/releases) section and install it from file.
+You can also download the toolbox as `.mtlbx` file from [bin](https://github.com/svkucheryavski/pcv/tree/master/bin) folder and install it from file.
 
-The Toolbox has "Getting started" tutorial, where you can see the examples of code and try them.
+The Toolbox has "Getting started" tutorial, where you can see examples of code and try them. Alternatively you can download file `demo.m` from this repository, which contains a demo code based on *Corn* dataset from [the paper](https://doi.org/10.1016/j.aca.2023.341096). See comments in the code for more details.
 
 Below you will also find a very short description of main functions:
 
@@ -46,8 +46,6 @@ As it is written above, from *1.1.0*, there is an additional parameter, `CVScope
 % PCV for PLS models with local CV scope
 Xpv = pcvpls(X, y, 20, true, false, {"ven", 4}, "local");
 ```
-
-File `demo.m`, which you can download from this repository contains a demo code based on *Corn* dataset from the paper to be published. See comments in the code for more details.
 
 The code will be improved and extended gradually. If you found a bug please report using [issues](https://github.com/svkucheryavski/pcv/issues) or send an email.
 
