@@ -2,29 +2,21 @@
 
 <img src="logo.png" width="75" height="75" style="float:left;padding-right:10px;">
 
-Procrustes cross-validation (PCV) is a new approach for validation of chemometric models. It generates a new dataset — *PV-set*, which can be used for validation of PCA/SIMCA/PCR/PLS models in the same way as with an independent validation set.
+Procrustes cross-validation (PCV) is a novel approach for validation of chemometric models. It generates a new dataset — *PV-set*, which can be used for validation of PCA/SIMCA/PCR/PLS models in the same way as with an independent validation set.
 
-This repository contains source code of PCV implementation in several programming languages (R, MATLAB, Python and Javascript) as well as some practical details.
+You can learn more the method in [this paper](https://doi.org/10.1016/j.aca.2023.341096). The paper is Open Access and is freely available for everyone. For more information see *References* section below.
 
-There are two versions of the method:
-
-1. The *initial* version was published in 2020. It is based on rotations in variable space, is a bit slow, and works only for PCA/SIMCA models. Paper [1] in References section below describes the original method and paper [2] shows some practical examples of its use for SIMCA classification.
-
-2. The *new* version was created in 2022 as a generalization of the original approach. The new version is much faster and can also work with regression models (e.g. PCR, PLS1, PLS2). Paper [3] describes the new method.
-
-Some practical details about how to use PCV with different programming languages are given below.
-
-If you do not use any of the languages you can apply PCV to your own data via an interactive web-application: [https://mda.tools/pcv/](https://mda.tools/pcv/). The application takes your data as a CSV file (in case of regression first column must contain the response values), it does all calculations in your browser and does not send any information to server.
+This repository contains source code of PCV implementation in several programming languages (R, MATLAB, Python and Javascript) as well as some practical details. If you do not use any of the languages you can apply PCV to your own data via an interactive web-application: [https://mda.tools/pcv/](https://mda.tools/pcv/). The application takes your data as a CSV file (in case of regression first column must contain the response values), it does all calculations in your browser and does not send any information to server.
 
 ## Release notes
 
-Last update was released on 8th of August, 2023 for all languages and for the web-application. It contains small improvements, better test coverage and new experimental feature — CV-scope. This feature lets you define how local calibration sets must be centered and scaled.
+Last update was released on 12th of August, 2023 for all languages and for the web-application. It contains small improvements, better test coverage and new experimental feature — CV-scope. This feature lets you define how local calibration sets must be centered and scaled.
 
-By default a *global* scope is used, so all local models have the same center as the global model in the original variable space. In this case all local calibration sets are autoscaled using globally computed mean and standard deviation values.  This implementation is also described in the main [PCV paper](https://doi.org/10.1016/j.aca.2023.341096).
+By default a *global* scope is used, so all local models have the same center as the global model in the original variable space. In this case all local calibration sets are autoscaled using globally computed mean and standard deviation values. This implementation is also described in [the paper](https://doi.org/10.1016/j.aca.2023.341096).
 
 If you use a local CV-scope, then each local calibration set will be autoscaled independently by using mean values and standard deviations computed for the set. This will slightly increase the sampling error and, in theory, should make it more realistic. But the Procrustean rules for PV-sets computed using local CV scope will only hold approximately true (there is a strong agreement in case of global scope). This feature requires additional investigation so use it with caution.
 
-Finally we have also implemented PCV for Python and Javascript languages, check links with additional information below. The [web-application](https://mda.tools/pcv/) has been re-written and now should work a bit faster and provide more plots for assessing PCV results.
+Finally I have also implemented PCV for Python and Javascript languages, check links with additional information below. The [web-application](https://mda.tools/pcv/) has been re-written and now should work a bit faster and provide more plots for assessing PCV results.
 
 ## Implementation of PCV in different languages
 
@@ -38,7 +30,7 @@ Please use the links below to get to a part of the repository, describing implem
 
 ## References
 
-Paper [1] describes the original version, paper [2] — shows some practical examples for SIMCA, paper [3] — introduces the new version.
+Here you can find some useful papers about PCV. Paper [1] describes the initial version of the method. Paper [2] shows some practical examples for using PCV in SIMCA models. Paper [3] introduces the new, more general and efficient version of the method.
 
 Please cite the paper [3] if you use PCV in your projects.
 
