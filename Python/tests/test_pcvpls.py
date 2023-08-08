@@ -60,11 +60,11 @@ def pls_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, cente
 
         Tpva = Tpv[..., :a]
         Upva = Upv[..., :a]
-        Epva = Xpv - np.dot(Tpva, np.transpose(Pa))
+        Epva = Xpv - np.dot(Tpva, Pa.T)
 
         Qpv[..., a - 1] = (Epva * Epva).sum(axis = 1)
         Hpv[..., a - 1] = (Upva * Upva).sum(axis = 1)
-        Ypv[..., a - 1] = np.dot(Tpva, np.transpose(Ca)).flatten()
+        Ypv[..., a - 1] = np.dot(Tpva, Ca.T).flatten()
 
 
     Ypv = Ypv * sY + mY
