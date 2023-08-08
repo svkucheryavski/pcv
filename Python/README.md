@@ -2,7 +2,7 @@
 
 Package `prcv` implements [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in Python language.
 
-Last version of the package (*1.0.0*) was released 12th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the package (*1.0.2*) was released 12th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
