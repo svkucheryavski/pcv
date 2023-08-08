@@ -2,7 +2,7 @@
 
 Package `prcv` implements [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in Python language.
 
-Last version of the package (*1.0.0*) was released 8th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the package (*1.0.0*) was released 12th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
@@ -18,7 +18,7 @@ There are three main functions in the package:
 
 All three functions return PV-set generated with given parameters. The PV-set has the same size as the calibration set. In case of regression (PCR or PLS) PV-set is generated only for predictors (X), the response values for PV-set are the same as for the calibration set.
 
-The last two functions return the PV-set and an additional outcome, `D`, which is a matrix (2D Numpy array) containing scaling factors ($c_k/c$), for each segment and each component. See all details in the [paper](https://doi.org/10.1016/j.aca.2023.341096).
+The last two functions return the PV-set and an additional outcome, `D`, which is a matrix (2D Numpy array) containing scaling factors ($c_k/c$), for each segment and each component. See all details in [the paper](https://doi.org/10.1016/j.aca.2023.341096).
 
 Below are examples of the function syntax with main parameters:
 
@@ -57,7 +57,10 @@ As it is written above there is also additional parameter, `cvscope`, which can 
 Xpv, D = pcvpls(X, Y, ncomp = 20,  cv = {'type': 'ven', 'nseg': 4}, cvscope = 'local')
 ```
 
-File `demo.py`, which you can download from [GitHub repository](https://github.com/svkucheryavski/pcv/Python) contains a demo code based on *Corn* dataset from the [published paper](https://doi.org/10.1016/j.aca.2023.341096). See comments in the code for more details.
+Directory `demo`, which is available from [GitHub repository](https://github.com/svkucheryavski/pcv/Python), contains several files with dataset and demo code. Thus file `corn.csv` contains *Corn* dataset used in [the paper](https://doi.org/10.1016/j.aca.2023.341096) in Coma Separated Values format. File `demo.py` contains script with demo code and file `demo.ipynb` contains the same code but made as a Jupyter notebook. File `misc.py` contains several helper functions for the demo code, which are used in both the script and the notebook.
+
+Download all files and make sure all files are located in the same folder in order to run the code.
+
 
 The package code will be improved and extended gradually. If you found a bug please report using [issues](https://github.com/svkucheryavski/pcv/issues) or send an email.
 
