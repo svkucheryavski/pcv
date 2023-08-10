@@ -115,8 +115,8 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
 
       % correct direction of loadings for local model
       a = acos(sum(P .* Pk)) < pi / 2;
-      Pk = Pk * diag(a * 2 - 1);
-
+      Pk = Pk * diag(a * 2 - 1);      
+      
       % compute explained part of Xpv
       Tk = Xk * Pk;
       Xpvpar = Tk * P';
