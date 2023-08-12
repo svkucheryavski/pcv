@@ -34,8 +34,8 @@ Matrix with PV-set (same size as X)
 Procrustes cross-validation for PCA models
 }
 \details{
-The method computes pseudo-validation matrix Xpv, based on PCA decomposition of calibration
-set `X` and cross-validation. See description of the method in [1].
+The method computes Procrustes validation set (PV-set), matrix Xpv, based on PCA decomposition
+of calibration set `X` and cross-validation. See description of the method in [1].
 
 Parameter `cv` defines how to split the rows of the training set. The split is similar
 to cross-validation splits, as PCV is based on cross-validation. This parameter can have
@@ -57,10 +57,10 @@ is assumed that you have 9 rows in the calibration set, which will be split into
 The first segment will consist of measurements from rows 1, 4 and 7.
 
 Parameter `cv.scope` influences how the Procrustean rule is met. In case of "global" scope,
-the rule will be met strictly - error of predictions for PV-set and the global model will be
-identical to the error from conventional cross-validation. In case of "local" scope, every
+the rule will be met strictly - distances for PV-set and the global model will be
+identical to the distances from conventional cross-validation. In case of "local" scope, every
 local model will have its own center and scaling factor and hence the rule will be almost
-met (the errors will be close but not identical).
+met (the distances will be close but not identical).
 }
 \examples{
 
@@ -82,5 +82,6 @@ par(oldpar)
 }
 \references{
 1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-regression models. Submitted, 2022.
+regression models. Analytica Chimica Acta, 1255 (2022)
+[https://doi.org/10.1016/j.aca.2023.341096]
 }
