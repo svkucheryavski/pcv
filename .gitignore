@@ -4,6 +4,7 @@
 .RData
 .Ruserdata
 .Renviron
+.releases
 test.m
 test.R
 node_modules
