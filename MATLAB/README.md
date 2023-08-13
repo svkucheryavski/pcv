@@ -2,13 +2,13 @@
 
 This part of repository contains implementation of [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in MATLAB as a dedicated toolbox.
 
-Last version of the toolbox (*1.1.0*) was released 12th of August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details about this feature in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the toolbox was released in August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details about this feature in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
 All functions for running PCV in MATLAB are combined into a dedicated Toolbox which is available from Mathworks File Exchange repository ([direct link](https://se.mathworks.com/matlabcentral/fileexchange/121468-procrustes-cross-validation)). Alternatively you can click on "Add-Ons" button in MATLAB, select "Get Add-Ons", and search "Procrustes cross-validation".
 
-You can also download the toolbox as `.mtlbx` file from [bin](https://github.com/svkucheryavski/pcv/tree/master/bin) folder and install it from file.
+You can also download the toolbox as `.mtlbx` file from the repository and install it manually.
 
 The Toolbox has "Getting started" tutorial, where you can see examples of code and try them. Alternatively you can download file `demo.m` from this repository, which contains a demo code based on *Corn* dataset from [the paper](https://doi.org/10.1016/j.aca.2023.341096). See comments in the code for more details.
 
@@ -31,9 +31,7 @@ The next parameter (shown as 20 in the examples above) is a number of principal 
 
 Next two parameters with logical values define if the predictors must be mean centered and/or standardized. By default `Center` is set to `true` and `Scale` is set to  `false` as in the examples above. Regardless which settings you use, the resulted PV-set will be in original units (uncentered and unstandardized), so you can compare it directly with calibration set.
 
-Finally, the last parameter defines how to split the rows of the training set. The split is similar to cross-validation splits, as PCV is based on cross-validation. This parameter can have the following values:
-
-* A number (e.g. `4`). In this case this number specifies number of segments for random splits, except `1` which is a special case for leave-one-out (full cross-validation).
+Finally, the last parameter defines how to split the rows of the training set. The split is similar to cross-validation splits, as PCV is based on cross-validation resampling. This parameter can have the following values:
 
 * A cell array with 2 values: `{"name", nseg}`. In this case `"name"` defines the way to make the split, you can select one of the following: `"loo"` for leave-one-out, `"rand"` for random splits or `"ven"` for Venetian blinds (systematic) splits. The second parameter, `nseg`, is a number of segments for splitting the rows into.
 
