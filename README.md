@@ -4,19 +4,20 @@
 
 Procrustes cross-validation (PCV) is a novel approach for validation of chemometric models. It generates a new dataset — *PV-set*, which can be used for validation of PCA/SIMCA/PCR/PLS models in the same way as with an independent validation set.
 
-You can learn more the method in [this paper](https://doi.org/10.1016/j.aca.2023.341096). The paper is Open Access and is freely available for everyone. For more information see *References* section below.
+You can learn more about the method in [this paper](https://doi.org/10.1016/j.aca.2023.341096). The paper is Open Access and is freely available for everyone. For more information see *References* section below.
 
 This repository contains source code of PCV implementation in several programming languages (R, MATLAB, Python and Javascript) as well as some practical details. If you do not use any of the languages you can apply PCV to your own data via an interactive web-application: [https://mda.tools/pcv/](https://mda.tools/pcv/). The application takes your data as a CSV file (in case of regression first column must contain the response values), it does all calculations in your browser and does not send any information to server.
 
 ## Release notes
 
-Last update was released on 12th of August, 2023 for all languages and for the web-application. It contains small improvements, better test coverage and new experimental feature — CV-scope. This feature lets you define how local calibration sets must be centered and scaled.
+Last minor update [1.1.x) was released on 12th of August, 2023 for all languages. It contains small improvements, better test coverage and new experimental feature — CV-scope. This feature lets you define how local calibration sets must be centered and scaled.
 
 By default a *global* scope is used, so all local models have the same center as the global model in the original variable space. In this case all local calibration sets are autoscaled using globally computed mean and standard deviation values. This implementation is also described in [the paper](https://doi.org/10.1016/j.aca.2023.341096).
 
-If you use a local CV-scope, then each local calibration set will be autoscaled independently by using mean values and standard deviations computed for the set. This will slightly increase the sampling error and, in theory, should make it more realistic. But the Procrustean rules for PV-sets computed using local CV scope will only hold approximately true (there is a strong agreement in case of global scope). This feature requires additional investigation so use it with caution.
+If you use a local CV-scope, then each local calibration and validation sets will be autoscaled independently by using mean values and standard deviations computed for the local calibration set. This will slightly increase the sampling error and, in theory, should make it more realistic. But the Procrustean rules for PV-sets computed using the local CV scope will only hold approximately true (there is a strong agreement in case of the global scope). This feature requires additional investigation so use it with caution.
 
-Finally I have also implemented PCV for Python and Javascript languages, check links with additional information below. The [web-application](https://mda.tools/pcv/) has been re-written and now should work a bit faster and provide more plots for assessing PCV results.
+Finally I have also implemented PCV for Python and Javascript languages, check links with additional information below.
+
 
 ## Implementation of PCV in different languages
 
