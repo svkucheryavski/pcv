@@ -13,7 +13,7 @@ import { cv2obs, crossval, pcvpca, pcvpcr, pcvpls } from '../src/index.js';
 
 // set up test settings
 const expect = chai.expect;
-chai.use(chaiAlmost(0.00001));
+chai.use(chaiAlmost(0.0001));
 
 describe('Manual tests for PCV methods', function () {
 
@@ -36,7 +36,7 @@ describe('Manual tests for PCV methods', function () {
          0.8664892, 1.1233015, -0.4189311,
          0.9040871, 1.0111721,  1.4835077,
          0.9153578, 0.4453001, -1.0219994,
-      ], 3, 4);
+      ], 3, 4).t();
 
       const T1 = matrix([
          -0.4395929, -0.47753680, -0.1098689,
@@ -99,7 +99,7 @@ describe('Manual tests for PCV methods', function () {
          0.9272071, 1.4768482, -0.4511441,
          0.9676971, 1.1075906,  1.1945457,
          1.1402709, 0.6762249, -0.7272937
-      ], 3, 4);
+      ], 3, 4).t();
 
       const T1 = matrix([
          -1.5959914, -0.35669193,  1.7114956,

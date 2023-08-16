@@ -2,9 +2,13 @@
  *  Speed tests for PCV methods                                  *
  *****************************************************************/
 
+
+
+
 // import dependencies
+import * as fs from 'fs';
 import { Matrix } from 'mdatools/arrays';
-import { pcafit, pcapredict, pcrfit, pcrpredict, plsfit, plspredict } from 'mdatools/models';
+import { pcafit, pcapredict, pcrfit, pcrpredict, plsfit, plspredict, splitregdata } from 'mdatools/models';
 
 // import methods to test
 import { pcvpca, pcvpcr, pcvpls } from '../src/index.js';
@@ -17,22 +21,30 @@ function measure(f, msg = '') {
    return out;
 }
 
-const X = Matrix.rand(100, 1000);
-const Y = Matrix.rand(100, 1);
+const A = 30;
+const cv = {'type': 'ven', nseg: 10}
+const D = Matrix.parseCSV(fs.readFileSync('../.tests/data/corn.csv', 'utf8')).values;
+const [X, Y] = splitregdata(D);
 
-console.log('\nSpeed tests for PCV methods with 100 x 1000 matrix:');
-console.log('---------------------------------------------------');
+console.log(`\nSpeed tests for PCV methods with ${X.nrows} x ${X.ncols} matrix (A = ${A}, nseg = ${cv.nseg}):`);
+console.log('---------------------------------------------------------------------');
 
-const mpca = measure( () => pcafit(X, 20), 'pcafit');
+console.log('');
+const mpca = measure( () => pcafit(X, A), 'pcafit');
 measure( () => pcapredict(mpca, X), 'pcapredict');
-measure( () => pcvpca(X, mpca, 20, {type: 'ven', nseg: 10}), 'pcvpca');
+measure( () => pcvpca(X, mpca, A, cv), 'pcvpca (fast)');
+measure( () => pcvpca(X, mpca, A, cv, 'global', true), 'pcvpca (precise)');
 
-const mpcr = measure( () => pcrfit(X, Y, 20), 'pcrfit');
+console.log('');
+const mpcr = measure( () => pcrfit(X, Y, A), 'pcrfit');
 measure( () => pcrpredict(mpcr, X), 'pcrpredict');
-measure( () => pcvpcr(X, Y, mpcr, 20, {type: 'ven', nseg: 10}), 'pcvpcr');
+measure( () => pcvpcr(X, Y, mpcr, A, cv), 'pcvpcr (fast)');
+measure( () => pcvpcr(X, Y, mpcr, A, cv, 'global', true), 'pcvpcr (precise)');
 
-const mpls = measure( () => plsfit(X, Y, 20), 'plsfit');
+console.log('');
+const mpls = measure( () => plsfit(X, Y, A), 'plsfit');
 measure( () => plspredict(mpls, X, Y), 'plspredict');
-measure( () => pcvpls(X, Y, mpls, 20, {type: 'ven', nseg: 10}), 'pcvpls');
+measure( () => pcvpls(X, Y, mpls, A, cv), 'pcvpls (fast)');
+measure( () => pcvpls(X, Y, mpls, A, cv, 'global', true), 'pcvpls (precise)');
 
 console.log('');

@@ -4,11 +4,21 @@
 
 
 // import methods to test
-import { _dot, reshape, tcrossprod, Vector, Index, Matrix, isindex} from 'mdatools/arrays';
+import { _dot, ismatrix, crossprod, tcrossprod, Vector, Index, Matrix, isindex} from 'mdatools/arrays';
 import { ssq, norm2, max } from 'mdatools/stat';
 import { rsvd } from 'mdatools/decomp';
-import { simpls } from 'mdatools/models';
 import { scale as prep_scale, unscale as prep_unscale } from 'mdatools/prep';
+
+
+/**
+ * Returns settings for RSVD algorithm depending on criterion (fast or precise)
+ * @param {boolean} precise - shall precise version be selected or not.
+ * @returns {Array} array with settings for its, pa, and pb
+ */
+function get_rsvd_settings(precise) {
+   if (precise) return [1.2, 15, 4] // [pa, pb, its]
+   return [1, 15, 3];
+}
 
 
 /**
@@ -18,11 +28,13 @@ import { scale as prep_scale, unscale as prep_unscale } from 'mdatools/prep';
  * @param {JSON} m - object with global PCR model.
  * @param {number} ncomp - number of components to use.
  * @param {JSON} cv - object with type of splits ('ven', 'rand', 'loo') and number of segments.
+ * @param {string} [cvscope="global"] - defines if autoscale must be done globally ('global') or locally ('local').
+ * @param {boolean} [precise=false] - shall precise version be selected or not.
  *
  * @return {Matrix} matrix with PV-set.
  *
  */
-export function pcvpls(X, Y, m, ncomp, cv, cvscope) {
+export function pcvpls(X, Y, m, ncomp, cv, cvscope, precise) {
 
    // assemble JSON with functions
    const funlist = {
@@ -41,7 +53,7 @@ export function pcvpls(X, Y, m, ncomp, cv, cvscope) {
       getlocalmodel: function(Xc, Yc, m) {
 
          // get loadings for local model
-         const mk = simpls(Xc, Yc, m.ncomp);
+         const mk = simpls(Xc, Yc, m.ncomp, precise);
 
          // correct direction of loadings for local model and get scores
          const a = getdirections(m.R, mk.R);
@@ -90,13 +102,17 @@ export function pcvpls(X, Y, m, ncomp, cv, cvscope) {
  * @param {Matrix} Y - matrix with calibration set responses (1 column).
  * @param {JSON} m - object with global PCR model.
  * @param {JSON} cv - object with type of splits ('ven', 'rand', 'loo') and number of segments.
- * @param {string} cvscope - defines if autoscale must be done globally ('global') or locally ('local').
+ * @param {string} [cvscope="global"] - defines if autoscale must be done globally ('global') or locally ('local').
+ * @param {boolean} [precise=false] - shall precise version be selected or not.
+ *
  * @return {Array} two matrices: Xpv with PV-set and D with scalars.
  *
  * @return {Array} array with two matrices: D with scalars and Xpv with PV-set.
  *
  */
-export function pcvpcr(X, Y, m, ncomp, cv, cvscope) {
+export function pcvpcr(X, Y, m, ncomp, cv, cvscope, precise) {
+
+   const [pa, pb, its] = get_rsvd_settings(precise);
 
    // assemble JSON with functions
    const funlist = {
@@ -113,7 +129,7 @@ export function pcvpcr(X, Y, m, ncomp, cv, cvscope) {
       getlocalmodel: function(Xc, Yc, m) {
 
          // get loadings for local model
-         const Pk = rsvd(Xc, m.ncomp).V;
+         const Pk = rsvd(Xc, m.ncomp, pa, pb, its).V;
 
          // correct direction of loadings for local model and get scores
          const a = getdirections(m.P, Pk);
@@ -160,6 +176,7 @@ export function pcvpcr(X, Y, m, ncomp, cv, cvscope) {
    return pcvreg(X, Y, m, ncomp, cv, funlist, cvscope);
 }
 
+
 /**
  * Compute PV-set for regression models.
  *
@@ -168,7 +185,7 @@ export function pcvpcr(X, Y, m, ncomp, cv, cvscope) {
  * @param {JSON} m - object with global model.
  * @param {JSON} cv - object with type of splits ('ven', 'rand', 'loo') and number of segments.
  * @param {JSON} funlist - list of functions to compute different parts of Xpv.
- * @param {string} cvscope - defines if autoscale must be done globally ('global') or locally ('local').
+ * @param {string} [cvscope="global"] - defines if autoscale must be done globally ('global') or locally ('local').
  *
  * @return {Array} two matrices: Xpv with PV-set and D with scalars.
  *
@@ -177,6 +194,30 @@ function pcvreg(X, Y, m, ncomp, cv, funlist, cvscope) {
 
    if (!cvscope) {
       cvscope = 'global';
+   }
+
+   if (!ismatrix(X) || X.nrows < 4 || X.ncols < 2 ) {
+      throw new Error('pcvreg: parameter "X" must be a matrix with at least 4 rows and 2 columns.')
+   }
+
+   if (!ismatrix(Y) || Y.nrows !== X.nrows ) {
+      throw new Error('pcvreg: parameter "Y" must be a matrix with the same number of rows as "X".')
+   }
+
+   if (cv === null || typeof(cv) !== 'object') {
+      throw new Error('pcvreg: parameter "cv" must be specified correctly.')
+   }
+
+   if (ncomp === undefined || ncomp === null) {
+      ncomp = m.ncomp;
+   }
+
+   if (ncomp < 1 || ncomp > X.nrows) {
+      throw new Error('pcvreg: wrong value for parameter "ncomp".')
+   }
+
+   if (ncomp > m.ncomp) {
+      throw new Error(`pcvreg: value for parameter "ncomp" can not exceed number of components in global model "m" (${m.ncomp}).`)
    }
 
    const nobs = X.nrows;
@@ -235,19 +276,41 @@ function pcvreg(X, Y, m, ncomp, cv, funlist, cvscope) {
  * @param {JSON} m - object with global PCA model.
  * @param {number} ncomp - number of components to use.
  * @param {JSON} cv - object with type of splits ('ven', 'rand', 'loo') and number of segments.
- * @param {string} cvscope - defines if autoscale must be done globally ('global') or locally ('local').
+ * @param {string} [cvscope="global"] - defines if autoscale must be done globally ('global') or locally ('local').
+ * @param {boolean} [precise=false] - shall precise version be selected or not.
  *
  * @return {Matrix} matrix with PV-set.
  *
  */
-export function pcvpca(X, m, ncomp, cv, cvscope) {
-
-   const nobs = X.nrows;
-   const nvar = X.ncols;
+export function pcvpca(X, m, ncomp, cv, cvscope, precise) {
 
    if (!cvscope) {
       cvscope = 'global';
    }
+
+   if (!ismatrix(X) || X.nrows < 4 || X.ncols < 2 ) {
+      throw new Error('pcvpca: parameter "X" must be a matrix with at least 4 rows and 2 columns.')
+   }
+
+   if (cv === null || typeof(cv) !== 'object') {
+      throw new Error('pcvpca: parameter "cv" must be specified correctly.')
+   }
+
+   if (ncomp === undefined || ncomp === null) {
+      ncomp = m.ncomp;
+   }
+
+   if (ncomp < 1 || ncomp > X.nrows) {
+      throw new Error('pcvpca: wrong value for parameter "ncomp".')
+   }
+
+   if (ncomp > m.ncomp) {
+      throw new Error(`pcvpca: value for parameter "ncomp" can not exceed number of components in global model "m" (${m.ncomp}).`)
+   }
+
+   const [pa, pb, its] = get_rsvd_settings(precise);
+   const nobs = X.nrows;
+   const nvar = X.ncols;
 
    // get cross-validation parameters and adjusted number of components
    const [cvncomp, cvind, cvnseg] = getcvparams(nobs, nvar, cv, ncomp, m);
@@ -280,7 +343,7 @@ export function pcvpca(X, m, ncomp, cv, cvscope) {
       }
 
       // get loadings for local model and rotation matrix between global and local models
-      const Pk = rsvd(Xc, cvncomp).V;
+      const Pk = rsvd(Xc, cvncomp, pa, pb, its).V;
 
       // correct direction of loadings for local model
       const a = getdirections(P, Pk);
@@ -461,4 +524,83 @@ export function getcvparams(nobs, nvar, cv, ncomp, resp) {
    }
 
    return [ncomp, cvInd, cvNSeg]
+}
+
+
+/**
+ * Implementation of SIMPLS algorithm.
+ *
+ * @param {Matrix} X - matrix with predictors.
+ * @param {Matrix} Y - matrix with responses.
+ * @param {number} ncomp - number of components.
+ *
+ * @return {JSON} JSON with decomposition results.
+ *
+ */
+export function simpls(X, Y, ncomp, precise) {
+
+   const [pa, pb, its] = get_rsvd_settings(precise);
+
+   const nobj  = X.nrows;
+   const npred = X.ncols;
+   const nresp = Y.ncols;
+
+   // initial estimation
+   let S = crossprod(X, Y);
+   let M = crossprod(X);
+
+   // prepare space for results
+   const C = Matrix.zeros(nresp, ncomp)
+   const R = Matrix.zeros(npred, ncomp)
+   const V = Matrix.zeros(npred, ncomp)
+   const P = Matrix.zeros(npred, ncomp)
+   const T = Matrix.zeros(nobj, ncomp)
+   const U = Matrix.zeros(nobj, ncomp)
+
+   const xeigenvals = Vector.zeros(ncomp);
+   const yeigenvals = Vector.zeros(ncomp);
+
+   // loop for each components
+   for (let a = 1; a <= ncomp; a++) {
+
+      let r = rsvd(S, 1, pa, pb, its).U
+      let t = X.dot(r);
+
+      const tnorm = norm2(t.v);
+      t = t.apply(v => v / tnorm, 0);
+      r = r.apply(v => v / tnorm, 0);
+
+      const p = crossprod(X, t);
+      const c = crossprod(Y, t);
+      let u = Y.dot(c);
+      let v = p.copy()
+
+      if (a > 1) {
+         v = v.subtract(V.dot(crossprod(V, p)));
+         u = u.subtract(T.dot(crossprod(T, u)));
+      }
+
+      const vnorm = norm2(v.v);
+      v = v.apply(x => x / vnorm, 0);
+
+      R.v.set(r.v, (a - 1) * npred);
+      V.v.set(v.v, (a - 1) * npred);
+      P.v.set(p.v, (a - 1) * npred);
+      T.v.set(t.v, (a - 1) * nobj);
+      U.v.set(u.v, (a - 1) * nobj);
+      C.v.set(c.v, (a - 1) * nresp);
+
+
+      xeigenvals.v[a - 1] = ssq(t.v) / (nobj - 1);
+      yeigenvals.v[a - 1] = ssq(u.v) / (nobj - 1);
+
+      M = M.subtract(tcrossprod(p))
+      S = S.subtract(v.dot(crossprod(v, S)));
+   }
+
+   return {
+      R: R, P: P, T: T, C: C, U: U,
+      xeigenvals: xeigenvals,
+      yeigenvals: yeigenvals
+   };
 }
