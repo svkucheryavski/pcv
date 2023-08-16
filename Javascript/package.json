@@ -1,6 +1,6 @@
 {
    "name": "pcv",
-   "version": "1.0.0",
+   "version": "1.1.0",
    "private": false,
    "type": "module",
    "description": "Implementation of Procrustes Cross-Validation method.",
@@ -23,7 +23,7 @@
    },
    "homepage": "https://github.com/svkucheryavski/pcv/",
    "dependencies": {
-      "mdatools": "../../mdatools-js/"
+      "mdatools": "^1.1.0"
    },
    "devDependencies": {
       "chai": "^4.x",
