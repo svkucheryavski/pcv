@@ -6,6 +6,11 @@ You can learn more about the method in [this paper](https://doi.org/10.1016/j.ac
 
 This repository contains source code of PCV implementation in several programming languages (R, MATLAB, Python and Javascript) as well as some practical details. If you do not use any of the languages you can apply PCV to your own data via an interactive web-application: [https://mda.tools/pcv/](https://mda.tools/pcv/). The application takes your data as a CSV file (in case of regression first column must contain the response values), it does all calculations in your browser and does not send any information to server.
 
+
+## Data augmentation
+
+Our recent research published in pre-print ([arXiv:2312.04911v1](https://arxiv.org/abs/2312.04911)) demonstrates that PCV, in addition to its original purpose, can also address the problem of data augmentation. More information and two Jupyter notebook with examples can be found in the [Augmentation](./Augmentation) part of the repo.
+
 ## Release notes
 
 Last minor update [1.1.x) was released on 12th of August, 2023 for all languages. It contains small improvements, better test coverage and new experimental feature — CV-scope. This feature lets you define how local calibration sets must be centered and scaled.
