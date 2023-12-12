@@ -353,11 +353,13 @@ export function pcvpca(X, m, ncomp, cv, cvscope, precise) {
       const Tk = Xk.dot(Pka);
       const Xpvk_hat = tcrossprod(Tk, P);
 
+
       // if decomposition is full return the explained part only
       if (P.nrows > P.ncols) {
          const Ek = Xk.subtract(tcrossprod(Tk, Pka));
          const qkn = Ek.apply(norm2, 1);
-         Xpv.replace(Xpvk_hat.add(getxpvorth(qkn, Xk, PRM)), indk, []);
+         const Xpvk_orth = getxpvorth(qkn, Xk, PRM);
+         Xpv.replace(Xpvk_hat.add(Xpvk_orth), indk, []);
       } else {
          Xpv.replace(Xpvk_hat, indk, []);
       }
