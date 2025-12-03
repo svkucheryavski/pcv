@@ -13,7 +13,8 @@ Our recent research published in pre-print ([arXiv:2312.04911v1](https://arxiv.o
 
 ## Release notes
 
-Last minor update [1.1.x) was released on 12th of August, 2023 for all languages. It contains small improvements, better test coverage and new experimental feature — CV-scope. This feature lets you define how local calibration sets must be centered and scaled.
+Last minor update [1.2.x) was released on 3rd of December, 2025 for R and Python languages. It contains small improvements related to stability and preventing situations when NaN values can
+be generated (e.g. during scaling or normalization).
 
 By default a *global* scope is used, so all local models have the same center as the global model in the original variable space. In this case all local calibration sets are autoscaled using globally computed mean and standard deviation values. This implementation is also described in [the paper](https://doi.org/10.1016/j.aca.2023.341096).
 
