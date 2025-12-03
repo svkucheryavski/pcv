@@ -10,3 +10,7 @@ test.R
 node_modules
 __pycache__
 package-lock.json
+.venv
+.pytest_cache
+.vscode
+
