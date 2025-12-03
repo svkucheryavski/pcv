@@ -2,7 +2,7 @@
 
 Package `pcv` implements [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in R language.
 
-Last version of the package (*1.1.0*) was released in August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the package (*1.2.0*) was released in December, 2025 and contains small improvements to avoid issues with NaN numbers in case if original dataset or local subsets contain columns with constant values. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
