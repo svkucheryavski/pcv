@@ -3,6 +3,9 @@ from scipy.linalg import svd
 import math
 from .misc import get_cvsettings
 
+eps = 1e-12
+
+
 def pcvpls(X: np.ndarray,
         Y: np.ndarray,
         ncomp: int,
@@ -289,8 +292,14 @@ def pcvreg(X: np.ndarray,
     mY = Y.mean(axis = 0) if center else np.zeros(nresp)
     sY = Y.std(axis = 0, ddof = 1) if scale else np.ones(nresp)
 
-    X = (X - mX) / sX
-    Y = (Y - mY) / sY
+    is_const_X = np.allclose(X - mX, 0.0, atol=eps, rtol=0.0)
+    sX[is_const_X] <- 1.0 - eps;
+
+    is_const_Y = np.allclose(Y - mY, 0.0, atol=eps, rtol=0.0)
+    sY[is_const_Y] <- 1.0 - eps;
+
+    X = (X - mX) / (sX + eps)
+    Y = (Y - mY) / (sY + eps)
 
 
     # create a global model
@@ -315,9 +324,16 @@ def pcvreg(X: np.ndarray,
             sXl = Xc.std(axis = 0, ddof = 1) if scale else np.ones(ncols)
             mYl = Yc.mean(axis = 0) if center else np.zeros(nresp)
             sYl = Yc.std(axis = 0, ddof = 1) if scale else np.ones(nresp)
-            Xc = (Xc - mXl) / sXl
-            Yc = (Yc - mYl) / sYl
-            Xk = (Xk - mXl) / sXl
+
+            is_const_X = np.allclose(Xc - mXl, 0.0, atol=eps, rtol=0.0)
+            sXl[is_const_X] <- 1.0 - eps
+
+            is_const_Y = np.allclose(Yc - mYl, 0.0, atol=eps, rtol=0.0)
+            sYl[is_const_Y] <- 1.0 - eps
+
+            Xc = (Xc - mXl) / (sXl + eps)
+            Yc = (Yc - mYl) / (sYl + eps)
+            Xk = (Xk - mXl) / (sXl + eps)
 
         # get local model
         mk = funlist['get_localmodel'](Xc, Yc, m)
@@ -405,7 +421,9 @@ def pcvpca(X: np.ndarray,
     # compute global mean and standard deviation and autoscale the whole data
     mX = X.mean(axis = 0) if center else np.zeros(ncols)
     sX = X.std(axis = 0, ddof = 1) if scale else np.ones(ncols)
-    X = (X - mX) / sX
+    is_const_X = np.allclose(X - mX, 0.0, atol=eps, rtol=0.0)
+    sX[is_const_X] <- 1.0 - eps
+    X = (X - mX) / (sX + eps)
 
 
     # create a global model
@@ -428,8 +446,11 @@ def pcvpca(X: np.ndarray,
         if cvscope == 'local':
             mXl = Xc.mean(axis = 0) if center else np.zeros(ncols)
             sXl = Xc.std(axis = 0, ddof = 1) if scale else np.ones(ncols)
-            Xc = (Xc - mXl) / sXl
-            Xk = (Xk - mXl) / sXl
+            is_const_X = np.allclose(Xc - mXl, 0.0, atol=1e-12, rtol=0.0)
+            sXl[is_const_X] <- 1.0 - eps
+
+            Xc = (Xc - mXl) / (sXl + eps)
+            Xk = (Xk - mXl) / (sXl + eps)
 
         # get local model and correct directions of the loadings
         Pk, sk = get_pcamodel(Xc, cvncomp)
