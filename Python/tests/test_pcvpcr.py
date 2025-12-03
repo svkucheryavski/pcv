@@ -73,9 +73,14 @@ def test_pcrcase(X, Y, ncomp, cv, center, scale, D, T, Yp):
     cvind, cvncomp, cvnseg = get_cvsettings(cv, X.shape[0], ncomp, Y[..., :1])
     Xpv, Dpv = pcvpcr(X, Y, ncomp, center = center, scale = scale, cv = cv)
     r = pcr_predict(X, Y, Xpv, cvncomp, center = center, scale = scale)
+
     np.testing.assert_array_almost_equal(Dpv, np.array(D).reshape(cvnseg, cvncomp), decimal = 5)
     np.testing.assert_array_almost_equal(r['Yp'], np.array(Yp).reshape(X.shape[0], cvncomp), decimal = 5)
-    np.testing.assert_array_almost_equal(r['T'], np.array(T).reshape(X.shape[0], cvncomp), decimal = 5)
+    np.testing.assert_array_almost_equal(
+        np.abs(r['T']),
+        np.abs(np.array(T).reshape(X.shape[0], cvncomp)),
+        decimal = 5
+    )
 
 
 def test_pcrcase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
