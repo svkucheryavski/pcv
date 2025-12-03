@@ -3,7 +3,6 @@ Helper methods for main procedures.
 """
 
 import numpy as np
-import numpy.matlib
 import math
 
 
