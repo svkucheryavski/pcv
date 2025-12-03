@@ -505,11 +505,15 @@ def get_xpvorth(qk: np.ndarray, Xk: np.ndarray, PRM: np.ndarray) -> np.ndarray:
     # project Xk to a set of random vectors and normalize columns
     Z = np.random.randn(nobj, nobj)
     Xpv_orth = np.dot(Z, Xk)
-    Xpv_orth = Xpv_orth / np.linalg.norm(Xpv_orth, axis = 0)
+    n1 = np.linalg.norm(Xpv_orth, axis = 0)
+    n1[n1 < eps * 0.01] =  1.0 - eps
+    Xpv_orth = Xpv_orth / (n1 + eps)
 
     # orthogonalize and rescale rows so sum of their squares is the same as qk
     Xpv_orth = np.dot(Xpv_orth, PRM)
-    Xpv_orth = Xpv_orth * (np.sqrt(qk) / np.linalg.norm(Xpv_orth, axis = 1)).reshape(-1, 1)
+    n2 = np.linalg.norm(Xpv_orth, axis = 1)
+    n2[n2 < eps * 0.01] =  1.0 - eps
+    Xpv_orth = Xpv_orth * (np.sqrt(qk) / (n2 + eps)).reshape(-1, 1)
 
     return Xpv_orth
 
