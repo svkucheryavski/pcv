@@ -18,7 +18,7 @@
 #'
 #' @details
 #' The method computes pseudo-validation matrix Xpv, based on PLS decomposition of calibration
-#' set {X, y} and cross-validation.
+#' set (X, y) and cross-validation.
 #'
 #' Parameter `cv` defines how to split the rows of the training set. The split is similar
 #' to cross-validation splits, as PCV is based on cross-validation. This parameter can have

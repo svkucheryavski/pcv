@@ -25,12 +25,25 @@
 pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4),
    center = TRUE, scale = FALSE, funlist = list(), cv.scope = "global") {
 
+   # convert to matrix and check the values
+   X <- as.matrix(X)
+   if (sum(is.na(X)) > 0) {
+      stop("The original data (X) contains NaN values after being converted to matrix.")
+   }
+
    nRows <- nrow(X)
    nPred <- ncol(X)
 
    if (is.null(dim(Y))) {
       dim(Y) <- c(nRows, 1)
    }
+
+   # convert to matrix and check the values
+   Y <- as.matrix(Y)
+   if (sum(is.na(Y)) > 0) {
+      stop("The original data (Y) contains NaN values after being converted to matrix.")
+   }
+
 
    nResp <- ncol(Y)
 
@@ -62,6 +75,8 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
    if (scale) {
       sX <- apply(X, 2, sd)
       sY <- apply(Y, 2, sd)
+      sX[sX < (100 *.Machine$double.eps)] <- 1.0
+      sY[sY < (100 *.Machine$double.eps)] <- 1.0
    }
 
    # autoscale globally
@@ -102,6 +117,8 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
          if (scale) {
             sXl <- apply(X.c, 2, sd)
             sYl <- apply(Y.c, 2, sd)
+            sXl[sXl < (100 *.Machine$double.eps)] <- 1.0
+            sYl[sYl < (100 *.Machine$double.eps)] <- 1.0
          }
 
          X.c <- scale(X.c, center = mXl, scale = sXl)

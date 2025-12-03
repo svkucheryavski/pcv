@@ -77,9 +77,19 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
    # keep names if any
    attrs <- attributes(X)
 
+   # convert to matrix and check the values
+   X <- as.matrix(X)
+   if (sum(is.na(X)) > 0) {
+      stop("The original data contains NaN values after being converted to matrix.")
+   }
+
    # compute global mean and standard deviation and autoscale the whole data
    mX <- if (center) apply(X, 2, mean) else rep(0, ncol(X))
    sX <- if (scale) apply(X, 2, sd) else rep(1, ncol(X))
+
+   # correct sX to avoid division to a very small number
+   sX[sX < (100 *.Machine$double.eps)] <- 1.0
+
    X <- scale(X, center = mX, scale = sX)
 
    # indices for cross-validation
@@ -118,6 +128,8 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
       if (cv.scope == "local") {
          mXl <- if (center) apply(X.c, 2, mean) else rep(0, ncol(X.c))
          sXl <- if (scale) apply(X.c, 2, sd) else rep(1, ncol(X.c))
+         sXl[sXl < (100 *.Machine$double.eps)] <- 1.0
+
          X.c <- scale(X.c, center = mXl, scale = sXl)
          X.k <- scale(X.k, center = mXl, scale = sXl)
       }
