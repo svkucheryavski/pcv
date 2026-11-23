@@ -9,7 +9,7 @@
 
 Check Getting started documentation and see more details here: https://github.com/svkucheryavski/pcv.</param.description>
     <param.screenshot>/Users/svkucheryavski/Documents/Developing/pcv/logo.png</param.screenshot>
-    <param.version>1.1.0</param.version>
+    <param.version>1.2.0</param.version>
     <param.output>${PROJECT_ROOT}/Procrustes cross-validation.mltbx</param.output>
     <param.products.name />
     <param.products.id />

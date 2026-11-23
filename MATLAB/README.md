@@ -2,7 +2,7 @@
 
 This part of repository contains implementation of [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in MATLAB as a dedicated toolbox.
 
-Last version of the toolbox was released in August, 2023 and contains small improvements, better test coverage, as well as a new experimental feature — CV scope. See details about this feature in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the toolbox (1.2.0) was released in November, 2026. It contains the same stability fixes as R 1.2.0 and Python 1.2.2: columns with constant values no longer produce NaN values during scaling, rounding errors can no longer flip the signs of local loadings, and a wrong `CVScope` value now raises an error. Version 1.1.0 (August, 2023) introduced an experimental feature — CV scope. See details about this feature in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
