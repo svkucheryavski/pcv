@@ -44,6 +44,17 @@ ref.isoptimal <- function(M, p) {
    abs(sum(M[cbind(seq_len(n), p)]) - best) < 1e-12
 }
 
+# greedy matching: global components in order choose the best of the unused local ones
+ref.greedy <- function(M) {
+   p <- integer(0)
+   for (g in seq_len(nrow(M))) {
+      m <- M[g, ]
+      m[p] <- -Inf
+      p <- c(p, which.max(m))
+   }
+   p
+}
+
 # check that projections of HSV PV-set on the global model equal cross-validation results
 expect_hsv_cv <- function(X, P, center, scale, tol = 1e-8) {
    R <- attr(P, "ncomp")
@@ -66,6 +77,9 @@ expect_hsv_cv <- function(X, P, center, scale, tol = 1e-8) {
       if (attr(P, "align") == "optimal") {
          expect_true(ref.isoptimal(abs(crossprod(U2, L2)), p2))
          expect_true(ref.isoptimal(abs(crossprod(U3, L3)), p3))
+      } else {
+         expect_equal(p2, ref.greedy(abs(crossprod(U2, L2))))
+         expect_equal(p3, ref.greedy(abs(crossprod(U3, L3))))
       }
 
       # local factors in the order reported by the method, signs matched to the global ones
@@ -197,6 +211,13 @@ test_that("optimal and greedy matching give expected assignments", {
       best <- max(sapply(perms(n), function(p) sum(M[cbind(seq_len(n), p)])))
       expect_equal(sum(M[cbind(seq_len(n), lsap3w(M))]), best)
    }
+
+   # greedy matching agrees with the reference routine for random matrices
+   for (it in 1:50) {
+      n <- sample(2:8, 1)
+      Ul <- qr.Q(qr(matrix(rnorm(n * n), n)))
+      expect_equal(attr(align3w(diag(n), Ul, "greedy"), "perm"), ref.greedy(abs(Ul)))
+   }
 })
 
 test_that("HSV attributes are correct", {
@@ -295,6 +316,22 @@ test_that("wrong input gives an error", {
    Xc <- X
    Xc[, 2, ] <- 1
    expect_error(pcv3whsv(Xc, c(2, 2), scale = "mode2"), "zero variance")
+
+   # constant over the samples only: centered values are rounding noise, still an error
+   Xc <- X
+   for (k in seq_len(dim(X)[3])) Xc[, 2, k] <- 0.1 * k
+   for (j in seq_len(dim(X)[2])) Xc[, j, 3] <- 0.1 * j
+   expect_error(pcv3whsv(Xc, c(2, 2), scale = "mode2"), "mode 2, zero variance in variable\\(s\\) 2\\.")
+   expect_error(pcv3whsv(Xc, c(2, 2), scale = "mode3"), "mode 3, zero variance in variable\\(s\\) 3\\.")
+   expect_error(pcv3whsv(Xc, c(2, 2), scale = "both"), "mode 2, zero variance")
+
+   # mode 3 stage of "both" on its own
+   Xc <- X
+   for (j in seq_len(dim(X)[2])) Xc[, j, 3] <- 0.1 * j
+   expect_error(pcv3whsv(Xc, c(2, 2), scale = "both"), "mode 3, zero variance in variable\\(s\\) 3\\.")
+
+   # large offset with real variation is accepted
+   expect_silent(pcv3whsv(X + 1e9, c(2, 2), scale = "both", seed = 1))
    expect_error(pcv3whsv(X, c(2, 2), scale = "wrong"))
 
    expect_error(pcv3whsv(X, c(2, 2), cv.scope = "local"))
@@ -442,6 +479,9 @@ test_that("HSV results match the reference values", {
       expect_equal(al, rcsv(paste0(caseDir3w, "align", sfx)), tolerance = 1e-8)
       expect_equal(qh$q, as.vector(rcsv(paste0(caseDir3w, "Q", sfx))), tolerance = 1e-8)
       expect_equal(qh$h, as.vector(rcsv(paste0(caseDir3w, "H", sfx))), tolerance = 1e-8)
+
+      # here greedy and optimal matching differ in some segments
+      expect_hsv_cv(X, P, cs$center, cs$scale)
    }
 })
 

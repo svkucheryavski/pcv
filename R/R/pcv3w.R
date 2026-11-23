@@ -117,8 +117,8 @@ pcv3wbu <- function(X3w, mode = 2, ncomp = min(dim(X3w)[1] - 1, dim(X3w)[if (mod
 #' logical, to subtract the mean slab or not.
 #' @param scale
 #' scaling within modes: \code{"none"} (or \code{FALSE}), \code{"mode2"}, \code{"mode3"} or
-#' \code{"both"} (or \code{TRUE}), see details. A variable with zero variance cannot be scaled
-#' and gives an error.
+#' \code{"both"} (or \code{TRUE}), see details. A variable with zero variance (also when it is
+#' constant over the samples) cannot be scaled and gives an error.
 #' @param orth
 #' how to construct the orthogonal part: \code{"random"} (random mix of the segment's slabs,
 #' similar to the two-way method) or \code{"canonical"} (each slab's own local residual, no
@@ -359,6 +359,11 @@ prep3w <- function(X3w, center = TRUE, scale = "none") {
    S2 <- rep(1, d[2])
    S3 <- rep(1, d[3])
 
+   # zero variance check: sd below the rounding noise of centering (10 * I * eps times the
+   # largest absolute value of the variable before centering) counts as zero
+   A <- abs(X3w)
+   tol <- 10 * d[1] * .Machine$double.eps
+
    X3wp <- X3w
    if (center) {
       M <- apply(X3wp, c(2, 3), mean)
@@ -369,17 +374,18 @@ prep3w <- function(X3w, center = TRUE, scale = "none") {
 
    if (scale %in% c("mode2", "both")) {
       S2 <- apply(X3wp, 2, sd)
-      bad <- which(!is.finite(S2) | !(S2 > 0))
+      bad <- which(!is.finite(S2) | !(S2 > tol * apply(A, 2, max)))
       if (length(bad) > 0) {
          stop("prep3w: cannot scale mode 2, zero variance in variable(s) ",
             paste(bad[seq_len(min(5, length(bad)))], collapse = ", "), ".")
       }
       X3wp <- sweep(X3wp, 2, S2, "/")
+      A <- sweep(A, 2, S2, "/")
    }
 
    if (scale %in% c("mode3", "both")) {
       S3 <- apply(X3wp, 3, sd)
-      bad <- which(!is.finite(S3) | !(S3 > 0))
+      bad <- which(!is.finite(S3) | !(S3 > tol * apply(A, 3, max)))
       if (length(bad) > 0) {
          stop("prep3w: cannot scale mode 3, zero variance in variable(s) ",
             paste(bad[seq_len(min(5, length(bad)))], collapse = ", "), ".")

@@ -160,7 +160,8 @@ def pcv3whsv(X: np.ndarray,
         Logical, subtract the mean slab or not.
     scale : bool|str, default = 'none'
         Scaling within modes: 'none' (or False), 'mode2', 'mode3' or 'both' (or True). A variable
-        with zero variance cannot be scaled and gives an error.
+        with zero variance (also when it is constant over the samples) cannot be scaled and gives
+        an error.
     cv : array|dict, default = {'type': 'ven', 'nseg': 4}
         Parameters of cross-validation loop, see `pcvpca()` for details.
     orth : str, default = 'random'
@@ -415,26 +416,31 @@ def _prep3w(X: np.ndarray, center: bool, scale: str) -> dict:
     S3 = np.ones(n3)
     Xp = X - M
 
+    # zero variance check: sd below the rounding noise of centering (10 * I * eps times the
+    # largest absolute value of the variable before centering) counts as zero
+    A = np.abs(X) * (10 * X.shape[0] * _EPS)
+
     if scale in ('mode2', 'both'):
         S2 = Xp.transpose(1, 0, 2).reshape(n2, -1).std(axis = 1, ddof = 1)
-        _checkstd3w(S2, 2)
+        _checkstd3w(S2, A.max(axis = (0, 2)), 2)
         Xp = Xp / S2[None, :, None]
+        A = A / S2[None, :, None]
 
     if scale in ('mode3', 'both'):
         S3 = Xp.transpose(2, 0, 1).reshape(n3, -1).std(axis = 1, ddof = 1)
-        _checkstd3w(S3, 3)
+        _checkstd3w(S3, A.max(axis = (0, 1)), 3)
         Xp = Xp / S3[None, None, :]
 
     return {'Xp': Xp, 'M': M, 'S2': S2, 'S3': S3, 'center': center, 'scale': scale}
 
 
 
-def _checkstd3w(s: np.ndarray, mode: int):
+def _checkstd3w(s: np.ndarray, tol: np.ndarray, mode: int):
     """
-    Raise an error if some variables of a mode have zero variance.
+    Raise an error if some variables of a mode have zero variance (sd not above tol).
     """
 
-    bad = np.flatnonzero(~(np.isfinite(s) & (s > 0)))
+    bad = np.flatnonzero(~(np.isfinite(s) & (s > tol)))
     if bad.size > 0:
         raise ValueError(f'cannot scale mode {mode}, zero variance in variable(s) ' +
             ', '.join(str(b + 1) for b in bad[:5]) + '.')

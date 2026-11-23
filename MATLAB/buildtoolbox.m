@@ -31,7 +31,8 @@ end
 
 % files included in the toolbox (tests and project files are left out)
 opts.ToolboxFiles = fullfile(root, ["README.md", "corn.mat", "crossval.m", "demo.m", "doc", ...
-   "getxpvorth.m", "pcv.m", "pcvpca.m", "pcvpcr.m", "pcvpls.m", "pcvreg.m", "simpls.m"]);
+   "getxpvorth.m", "pcv.m", "pcv3wbu.m", "pcv3wfu.m", "pcv3whsv.m", "pcv3wtools.m", "pcvpca.m", ...
+   "pcvpcr.m", "pcvpls.m", "pcvreg.m", "simpls.m"]);
 opts.ToolboxGettingStartedGuide = fullfile(root, "doc", "GettingStarted.mlx");
 opts.ToolboxImageFile = fullfile(root, "..", "logo.png");
 

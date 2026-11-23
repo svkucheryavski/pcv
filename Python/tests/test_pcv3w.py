@@ -68,6 +68,20 @@ def is_optimal(M: np.ndarray, perm: np.ndarray) -> bool:
 
 
 
+def ref_greedy(M: np.ndarray) -> np.ndarray:
+    """
+    Greedy matching (numbered from 1): global components in order choose the best of the
+    unused local ones.
+    """
+    p = []
+    for g in range(M.shape[0]):
+        m = M[g].copy()
+        m[p] = -np.inf
+        p.append(int(np.argmax(m)))
+    return np.array(p) + 1
+
+
+
 def check_hsv_cv(test: unittest.TestCase, X: np.ndarray, Xpv: np.ndarray, info: dict,
         center: bool, scale: str, tol: float = 1e-8):
     """
@@ -92,6 +106,9 @@ def check_hsv_cv(test: unittest.TestCase, X: np.ndarray, Xpv: np.ndarray, info: 
         if info['align'] == 'optimal':
             test.assertTrue(is_optimal(np.abs(U2.T @ L2), p2))
             test.assertTrue(is_optimal(np.abs(U3.T @ L3), p3))
+        else:
+            np.testing.assert_array_equal(p2, ref_greedy(np.abs(U2.T @ L2)))
+            np.testing.assert_array_equal(p3, ref_greedy(np.abs(U3.T @ L3)))
 
         # local factors in the order reported by the method, signs matched to the global ones
         U2k = L2[:, p2 - 1]
@@ -249,6 +266,14 @@ class TestPCV3WHSV(unittest.TestCase):
         _, perm, _ = _align3w(Ug, Ul, 'greedy')
         np.testing.assert_array_equal(perm, [1, 3, 2])
 
+        # greedy matching agrees with the reference routine for random matrices
+        rng = np.random.default_rng(7)
+        for _ in range(50):
+            n = int(rng.integers(2, 9))
+            Ul = np.linalg.qr(rng.normal(size = (n, n)))[0]
+            _, perm, _ = _align3w(np.eye(n), Ul, 'greedy')
+            np.testing.assert_array_equal(perm, ref_greedy(np.abs(Ul)))
+
     def test_fixed_direction(self):
         """ Orthogonal part uses the fixed direction when needed. """
         rng = np.random.default_rng(5)
@@ -348,6 +373,28 @@ class TestPCV3WSeedAndInput(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'zero variance'):
             pcv3whsv(Xc, (2, 2), scale = 'mode2')
 
+        # constant over the samples only: centered values are rounding noise, still an error
+        Xc = X.copy()
+        Xc[:, 1, :] = 0.1 * np.arange(1, X.shape[2] + 1)
+        Xc[:, :, 2] = 0.1 * np.arange(1, X.shape[1] + 1)
+        with self.assertRaisesRegex(ValueError, r'mode 2, zero variance in variable\(s\) 2\.'):
+            pcv3whsv(Xc, (2, 2), scale = 'mode2')
+        with self.assertRaisesRegex(ValueError, r'mode 3, zero variance in variable\(s\) 3\.'):
+            pcv3whsv(Xc, (2, 2), scale = 'mode3')
+        with self.assertRaisesRegex(ValueError, 'mode 2, zero variance'):
+            pcv3whsv(Xc, (2, 2), scale = 'both')
+
+        # mode 3 stage of 'both' on its own
+        Xc = X.copy()
+        Xc[:, :, 2] = 0.1 * np.arange(1, X.shape[1] + 1)
+        with self.assertRaisesRegex(ValueError, r'mode 3, zero variance in variable\(s\) 3\.'):
+            pcv3whsv(Xc, (2, 2), scale = 'both')
+
+        # large offset with real variation is accepted
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            pcv3whsv(X + 1e9, (2, 2), scale = 'both', seed = 1)
+
         with self.assertRaises(ValueError):
             pcv3whsv(X, (2, 2), scale = 'wrong')
         with self.assertRaises(ValueError):
@@ -424,6 +471,9 @@ class TestPCV3WReferences(unittest.TestCase):
             (q, h) = ref_qh(X, Xpvr, infor['ncomp'], center, scale)
             np.testing.assert_allclose(q, rcsv('Q' + sfx), rtol = 1e-6, err_msg = 'Q' + sfx)
             np.testing.assert_allclose(h, rcsv('H' + sfx), rtol = 1e-6, err_msg = 'H' + sfx)
+
+            # here greedy and optimal matching differ in some segments
+            check_hsv_cv(self, X, Xpv, info, center, scale)
 
 
 
