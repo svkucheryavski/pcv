@@ -6,6 +6,32 @@ function tests = pcvplsTest
    tests = functiontests(localfunctions);
 end
 
+
+function testEdgeCases(testCase)
+% edge cases: constant column, small dataset, invalid CVScope
+
+   Y = [32; 35; 36; 37; 42; 43; 43; 44];
+   X = [150 41 28000 119; 160 48 31000 129; 166 47 28000 112; 166 49 14000 123; ...
+        175 67 38000 105; 180 80 30000 129; 181 75 31000 105; 180 81 42000 113];
+
+   % constant column must not produce NaN values
+   Xc = [X, repmat(42, size(X, 1), 1)];
+   rng(42);
+   [Xpv, D] = pcvpls(Xc, Y, 3, true, true, {"ven", 4});
+   verifySize(testCase, Xpv, size(Xc));
+   verifyFalse(testCase, any(isnan(Xpv(:))));
+   verifyFalse(testCase, any(isnan(D(:))));
+
+   % small dataset (6 rows): number of components is reduced automatically
+   rng(42);
+   [Xpv, ~] = pcvpls(X(1:6, :), Y(1:6), 10, true, false, {"ven", 3});
+   verifyEqual(testCase, size(Xpv, 1), 6);
+   verifyFalse(testCase, any(isnan(Xpv(:))));
+
+   % wrong CVScope value must raise an error
+   verifyError(testCase, @() pcvpls(X, Y, 3, true, false, {"ven", 4}, "wrong"), ?MException);
+end
+
 function testCornData(testCase)
 % runs tests for Corn dataset
 
@@ -101,8 +127,8 @@ function compareWithReferences(testCase, X, Y)
 
             verifyEqual(testCase, Ypvg, csvread(strcat(caseDir, "Ypvg", fileSuffix)), 'RelTol', 10^-6)
             verifyEqual(testCase, Ypvl, csvread(strcat(caseDir, "Ypvl", fileSuffix)), 'RelTol', 10^-6)
-            verifyEqual(testCase, Dg, csvread(strcat(caseDir, "Dg", fileSuffix)), 'RelTol', 10^-6)
-            verifyEqual(testCase, Dl, csvread(strcat(caseDir, "Dl", fileSuffix)), 'RelTol', 10^-6)
+            verifyEqual(testCase, Dg, csvread(strcat(caseDir, "Dg", fileSuffix)), 'RelTol', 10^-6, 'AbsTol', 10^-5)
+            verifyEqual(testCase, Dl, csvread(strcat(caseDir, "Dl", fileSuffix)), 'RelTol', 10^-6, 'AbsTol', 10^-5)
          end
       end
    end

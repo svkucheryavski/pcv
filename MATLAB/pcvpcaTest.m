@@ -6,6 +6,29 @@ function tests = pcvpcaTest
    tests = functiontests(localfunctions);
 end
 
+
+function testEdgeCases(testCase)
+% edge cases: constant column, small dataset, invalid CVScope
+
+   X = reshape([1 3 17 19 10 14 7 13 9 11 2 15 8 6 4 12 22 18 4 14 13 12 1 15], 8, 3);
+
+   % constant column must not produce NaN values
+   Xc = [X, repmat(42, size(X, 1), 1)];
+   rng(42);
+   Xpv = pcvpca(Xc, 2, true, true, {"ven", 2});
+   verifySize(testCase, Xpv, size(Xc));
+   verifyFalse(testCase, any(isnan(Xpv(:))));
+
+   % small dataset (6 rows): number of components is reduced automatically
+   rng(42);
+   Xpv = pcvpca(X(1:6, :), 10, true, false, {"ven", 3});
+   verifyEqual(testCase, size(Xpv, 1), 6);
+   verifyFalse(testCase, any(isnan(Xpv(:))));
+
+   % wrong CVScope value must raise an error
+   verifyError(testCase, @() pcvpca(X, 2, true, false, {"ven", 4}, "wrong"), ?MException);
+end
+
 function testCornData(testCase)
 % runs tests for Corn dataset
 
