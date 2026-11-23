@@ -2,7 +2,7 @@
 
 Package `prcv` implements [Procrustes cross-validation](https://github.com/svkucheryavski/pcv) in Python language.
 
-Last main version of the package was released in December, 2025 and contains small improvements to avoid issues with NaN numbers in case if original dataset or local subsets contain columns with constant values.. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
+Last version of the package (1.2.2) was released in November, 2026. It fixes several bugs: columns with constant values were not handled correctly during scaling, a response given as a one-dimensional array was not accepted, PLS could fail when the number of components had to be reduced, and rounding errors could flip the signs of local loadings. NumPy and SciPy are now installed automatically as dependencies. See details in the overall [project description](https://github.com/svkucheryavski/pcv).
 
 ## Getting started
 
