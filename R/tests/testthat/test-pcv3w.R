@@ -121,6 +121,36 @@ test_that("HSV PV-set is valid for smaller numbers of components", {
    expect_hsv_cv(X, P, TRUE, "none")
 })
 
+test_that("optimal and greedy matching give expected assignments", {
+   # absolute cosines (global components in rows, local in columns) where the methods differ
+   M <- matrix(c(
+      0.90, 0.80, 0.10,
+      0.85, 0.10, 0.30,
+      0.20, 0.75, 0.70), 3, 3, byrow = TRUE)
+   expect_equal(lsap3w(M), c(2L, 1L, 3L))
+
+   Ug <- diag(3)
+   Ul <- M * matrix(c(1, -1, 1), 3, 3, byrow = TRUE)
+   expect_equal(attr(align3w(Ug, Ul, "optimal"), "perm"), c(2L, 1L, 3L))
+   expect_equal(attr(align3w(Ug, Ul, "greedy"), "perm"), c(1L, 3L, 2L))
+
+   # signs are flipped so matched pairs have positive inner products
+   Ua <- align3w(Ug, Ul, "optimal")
+   expect_true(all(diag(crossprod(Ug, Ua)) > 0))
+   expect_equal(attr(Ua, "cos"), c(0.80, 0.85, 0.70))
+
+   # optimal matching finds the maximal sum for random matrices up to 6 x 6
+   perms <- function(n) if (n == 1) list(1L) else
+      unlist(lapply(perms(n - 1), function(p) lapply(0:(n - 1), function(k) append(p, n, k))), FALSE)
+   set.seed(7)
+   for (it in 1:100) {
+      n <- sample(2:6, 1)
+      M <- matrix(runif(n * n), n)
+      best <- max(sapply(perms(n), function(p) sum(M[cbind(seq_len(n), p)])))
+      expect_equal(sum(M[cbind(seq_len(n), lsap3w(M))]), best)
+   }
+})
+
 test_that("HSV attributes are correct", {
    X <- simdata3w()
    P <- pcv3whsv(X, c(3, 2), cv = list("ven", 4), scale = TRUE, orth = "canonical", seed = 1)
@@ -218,6 +248,105 @@ test_that("wrong input gives an error", {
    expect_error(pcv3whsv(X, c(2, 2), press = TRUE))
    expect_error(pcv3wbu(X, mode = 1), "mode")
    expect_error(pcv3wfu(matrix(1:20, 4)), "three-way")
+})
+
+
+context("pcv3w: reference values for Python and MATLAB")
+
+## directories with dataset and reference values shared with Python and MATLAB tests
+dataFile3w <- "../../../.tests/data/sim3w-20x8x6.csv"
+caseDir3w <- "../../../.tests/pcv3whsv/"
+
+# simulated data for references: Tucker structure with random 4 x 3 core per sample plus noise
+refdata3w <- function() {
+   set.seed(42)
+   I <- 20; J <- 8; K <- 6
+   B <- qr.Q(qr(matrix(rnorm(J * 4), J)))
+   C <- qr.Q(qr(matrix(rnorm(K * 3), K)))
+   X <- array(0, c(I, J, K))
+   for (i in seq_len(I)) X[i, , ] <- B %*% matrix(rnorm(12, sd = c(4, 3, 2, 1)), 4, 3) %*% t(C)
+   round(X + array(rnorm(I * J * K, sd = 0.1), dim(X)) + 3, 6)
+}
+
+# q and h of a PV-set on the global model (h uses the pseudo-inverse of the score scatter)
+ref.qh <- function(X, P, R, center, scale) {
+   p <- ref.prep(X, center, scale)
+   U2 <- ref.factors(p$Xp, 2, R[1])
+   U3 <- ref.factors(p$Xp, 3, R[2])
+   scores <- function(A) t(sapply(seq_len(dim(A)[1]), function(i) as.vector(crossprod(U2, ref.slab(A, i)) %*% U3)))
+   s <- svd(scores(p$Xp), nu = 0)
+   use <- s$d > sqrt(.Machine$double.eps) * s$d[1]
+   Pp <- p$apply(P)
+   T <- scores(Pp)
+   q <- sapply(seq_len(dim(P)[1]), function(i) sum(ref.slab(Pp, i)^2)) - rowSums(T^2)
+   h <- rowSums((T %*% s$v[, use, drop = FALSE] %*% diag(1 / s$d[use], sum(use)))^2)
+   list(q = q, h = h)
+}
+
+# test cases: R2, R3, center, scale, align, cv
+refcases3w <- function() {
+   cases <- list()
+   for (center in c(TRUE, FALSE)) for (scale in c("none", "mode2", "mode3", "both")) {
+      cases[[length(cases) + 1]] <- list(ncomp = c(3, 3), center = center, scale = scale,
+         align = "optimal", cv = list("ven", 4))
+   }
+   for (align in c("optimal", "greedy")) for (cv in list(list("ven", 4), list("loo"))) {
+      cases[[length(cases) + 1]] <- list(ncomp = c(4, 2), center = TRUE, scale = "none",
+         align = align, cv = cv)
+   }
+   cases
+}
+
+refsuffix3w <- function(cs) {
+   cvtext <- if (length(cs$cv) == 2) paste0(cs$cv[[1]], cs$cv[[2]]) else cs$cv[[1]]
+   sprintf("-%dx%d-%s-%s-%s-%s.csv", cs$ncomp[1], cs$ncomp[2], toupper(cs$center), cs$scale,
+      cs$align, cvtext)
+}
+
+# set PCV_SAVE_REFS=TRUE to (re)generate the dataset and the reference values
+test_that("HSV results match the reference values", {
+   save <- Sys.getenv("PCV_SAVE_REFS") == "TRUE"
+   wcsv <- function(x, f) write.table(x, f, col.names = FALSE, row.names = FALSE, sep = ",", dec = ".")
+   rcsv <- function(f) unname(as.matrix(read.csv(f, header = FALSE)))
+
+   if (save) {
+      dir.create(caseDir3w, showWarnings = FALSE)
+      X <- refdata3w()
+      wcsv(matrix(X, dim(X)[1]), dataFile3w)
+   }
+   skip_if_not(file.exists(dataFile3w), "reference dataset not found")
+
+   # dataset is stored unfolded, I x (J*K) with mode 2 running fastest
+   X <- array(rcsv(dataFile3w), c(20, 8, 6))
+
+   for (cs in refcases3w()) {
+      sfx <- refsuffix3w(cs)
+
+      # canonical orthogonal part: PV-set itself is fully determined
+      P <- suppressWarnings(pcv3whsv(X, cs$ncomp, cv = cs$cv, center = cs$center, scale = cs$scale,
+         orth = "canonical", align = cs$align))
+      al <- unname(as.matrix(attr(P, "alignment")))
+
+      # random orthogonal part: q and h are still determined (equal to cross-validation)
+      Pr <- suppressWarnings(pcv3whsv(X, cs$ncomp, cv = cs$cv, center = cs$center, scale = cs$scale,
+         orth = "random", align = cs$align, seed = 1))
+      qh <- ref.qh(X, Pr, attr(Pr, "ncomp"), cs$center, cs$scale)
+      qhc <- ref.qh(X, P, attr(P, "ncomp"), cs$center, cs$scale)
+      expect_equal(qh$q, qhc$q, tolerance = 1e-8)
+      expect_equal(qh$h, qhc$h, tolerance = 1e-8)
+
+      if (save) {
+         wcsv(matrix(P, dim(P)[1]), paste0(caseDir3w, "Xpv", sfx))
+         wcsv(al, paste0(caseDir3w, "align", sfx))
+         wcsv(qh$q, paste0(caseDir3w, "Q", sfx))
+         wcsv(qh$h, paste0(caseDir3w, "H", sfx))
+      }
+
+      expect_equal(matrix(P, dim(P)[1]), rcsv(paste0(caseDir3w, "Xpv", sfx)), tolerance = 1e-8)
+      expect_equal(al, rcsv(paste0(caseDir3w, "align", sfx)), tolerance = 1e-8)
+      expect_equal(qh$q, as.vector(rcsv(paste0(caseDir3w, "Q", sfx))), tolerance = 1e-8)
+      expect_equal(qh$h, as.vector(rcsv(paste0(caseDir3w, "H", sfx))), tolerance = 1e-8)
+   }
 })
 
 
