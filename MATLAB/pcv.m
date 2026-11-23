@@ -81,7 +81,8 @@ function Xpv = pcv(X, nComp, nSeg, Scale)
       Pk = Pk(:, 1:nComp);
 
       % correct direction of loadings for local model
-      a = acos(sum(P .* Pk)) < pi / 2;
+      cosines = min(max(sum(P .* Pk), -1), 1);
+      a = acos(cosines) < pi / 2;
       Pk = Pk * diag(a * 2 - 1);
 
       % get rotation matrix between the PC spaces

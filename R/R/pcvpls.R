@@ -51,7 +51,7 @@
 #'
 #' @references
 #' 1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-#' regression models. Analytica Chimica Acta, 1255 (2022)
+#' regression models. Analytica Chimica Acta, 1255, 2023.
 #' [https://doi.org/10.1016/j.aca.2023.341096]
 #'
 #' @examples
@@ -103,10 +103,10 @@ pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, s
          R.k <- m.k$R
 
          # correct angles for loadings and weights
-         aa <- acos(colSums(normalize(m$R, 2) * normalize(R.k, 2))) < pi / 2
-         R.k <- R.k %*% diag(aa * 2 - 1, ncol(R.k), ncol(R.k))
-         P.k <- P.k %*% diag(aa * 2 - 1, ncol(P.k), ncol(P.k))
-         C.k <- C.k %*% diag(aa * 2 - 1, ncol(C.k), ncol(C.k))
+         S <- flipSigns(normalize(m$R, 2), normalize(R.k, 2))
+         R.k <- R.k %*% S
+         P.k <- P.k %*% S
+         C.k <- C.k %*% S
 
          return(list(P = P.k, R = R.k, C = C.k))
       },
@@ -126,9 +126,11 @@ pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, s
          T.k <- X.k %*% R.k
 
          # compute the diagonal elements of the matrix D
+         eps <- 100 * .Machine$double.eps
          D.k <- diag(nrow = m$ncomp, ncol = m$ncomp)
          for (a in seq_len(m$ncomp)) {
-            D.k[a, a] <- as.numeric(crossprod(C.k[, a], C[, a])) / as.numeric(crossprod(C[, a]))
+            denom <- as.numeric(crossprod(C[, a]))
+            D.k[a, a] <- if (denom < eps) 0 else as.numeric(crossprod(C.k[, a], C[, a])) / denom
          }
 
          T.pv <- T.k %*% D.k
@@ -157,8 +159,13 @@ pcvpls <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), center = TRUE, s
 #' @param weights
 #' vector with normalization weights, by default 2-norm is used
 #'
-normalize <- function(X, dim = 1, weights = if(dim == 1) 1 / sqrt(rowSums(X^2)) else 1 / sqrt(colSums(X^2)) ) {
-  sweep(X, dim, weights, FUN = "*")
+normalize <- function(X, dim = 1, weights = NULL) {
+   if (is.null(weights)) {
+      norms <- if (dim == 1) sqrt(rowSums(X^2)) else sqrt(colSums(X^2))
+      norms[norms < (100 * .Machine$double.eps)] <- 1.0
+      weights <- 1 / norms
+   }
+   sweep(X, dim, weights, FUN = "*")
 }
 
 
@@ -207,6 +214,7 @@ simpls <- function(X, Y, ncomp) {
       t <- X %*% r
 
       tnorm <- sqrt(sum(t * t))
+      if (tnorm < (100 * .Machine$double.eps)) break
       t <- t / tnorm
       r <- r / tnorm
 
@@ -220,7 +228,9 @@ simpls <- function(X, Y, ncomp) {
          u <- u - TT %*% crossprod(TT, u)
       }
 
-      v <- v / sqrt(sum(v * v))
+      vnorm <- sqrt(sum(v * v))
+      if (vnorm < (100 * .Machine$double.eps)) break
+      v <- v / vnorm
 
       R[, a] <- r
       V[, a] <- v

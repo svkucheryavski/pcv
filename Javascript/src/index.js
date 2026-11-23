@@ -68,7 +68,10 @@ export function pcvpls(X, Y, m, ncomp, cv, cvscope, precise) {
       // compute the explained part of Xpv
       getxpv: function(m, mk, Xk) {
          const Tk = Xk.dot(mk.R);
-         const dk = mk.C.divide(m.C);
+         const dk = mk.C.copy();
+         for (let i = 0; i < dk.v.length; i++) {
+            dk.v[i] = Math.abs(m.C.v[i]) < 1e-12 ? 0.0 : mk.C.v[i] / m.C.v[i];
+         }
 
          const Tpvk = Matrix.zeros(Tk.nrows, Tk.ncols);
          for (let a = 1; a <= m.ncomp; a++) {
@@ -150,7 +153,10 @@ export function pcvpcr(X, Y, m, ncomp, cv, cvscope, precise) {
       // compute the explained part of Xpv
       getxpv: function(m, mk, Xk) {
          const Tk = Xk.dot(mk.P);
-         const dk = mk.C.divide(m.C);
+         const dk = mk.C.copy();
+         for (let i = 0; i < dk.v.length; i++) {
+            dk.v[i] = Math.abs(m.C.v[i]) < 1e-12 ? 0.0 : mk.C.v[i] / m.C.v[i];
+         }
 
          const Tpvk = Matrix.zeros(Tk.nrows, Tk.ncols);
          for (let a = 1; a <= m.ncomp; a++) {
@@ -194,6 +200,10 @@ function pcvreg(X, Y, m, ncomp, cv, funlist, cvscope) {
 
    if (!cvscope) {
       cvscope = 'global';
+   }
+
+   if (cvscope !== 'global' && cvscope !== 'local') {
+      throw new Error('pcvreg: parameter "cvscope" must be "global" or "local".');
    }
 
    if (!ismatrix(X) || X.nrows < 4 || X.ncols < 2 ) {
@@ -288,6 +298,10 @@ export function pcvpca(X, m, ncomp, cv, cvscope, precise) {
       cvscope = 'global';
    }
 
+   if (cvscope !== 'global' && cvscope !== 'local') {
+      throw new Error('pcvpca: parameter "cvscope" must be "global" or "local".');
+   }
+
    if (!ismatrix(X) || X.nrows < 4 || X.ncols < 2 ) {
       throw new Error('pcvpca: parameter "X" must be a matrix with at least 4 rows and 2 columns.')
    }
@@ -347,7 +361,7 @@ export function pcvpca(X, m, ncomp, cv, cvscope, precise) {
 
       // correct direction of loadings for local model
       const a = getdirections(P, Pk);
-      const Pka = Pk.dot(Matrix.diagm(a, nvar));
+      const Pka = Pk.dot(Matrix.diagm(a, a.length));
 
       // compute explained part of Xpvk
       const Tk = Xk.dot(Pka);
@@ -488,11 +502,17 @@ export function getdirections(X, Xk) {
       const cnorm = norm2(xc);
       const cnormk = norm2(xck);
 
+      if (cnorm < 1e-12 || cnormk < 1e-12) {
+         a.v[c - 1] = 1;
+         continue;
+      }
+
       let s = 0;
       for (let r = 0; r < xc.length; r++) {
          s += xc[r] / cnorm * xck[r] / cnormk;
       }
 
+      s = Math.max(-1, Math.min(1, s));
       a.v[c - 1] = (Math.acos(s) < (Math.PI / 2.0)) * 2 - 1;
    }
 
@@ -514,8 +534,8 @@ export function getdirections(X, Xk) {
  */
 export function getcvparams(nobs, nvar, cv, ncomp, resp) {
 
-   const nseg = cv === undefined ? 4 : cv.nseg;
    const cvType = cv === undefined ? "ven" : cv.type;
+   const nseg = cv === undefined ? 4 : (cvType === 'loo' ? nobs : (cv.nseg || 4));
    const cvInd = crossval(cvType, nseg, nobs, resp);
    const cvNSeg = max(cvInd);
 
@@ -569,6 +589,7 @@ export function simpls(X, Y, ncomp, precise) {
       let t = X.dot(r);
 
       const tnorm = norm2(t.v);
+      if (tnorm < 1e-12) break;
       t = t.apply(v => v / tnorm, 0);
       r = r.apply(v => v / tnorm, 0);
 
@@ -583,6 +604,7 @@ export function simpls(X, Y, ncomp, precise) {
       }
 
       const vnorm = norm2(v.v);
+      if (vnorm < 1e-12) break;
       v = v.apply(x => x / vnorm, 0);
 
       R.v.set(r.v, (a - 1) * npred);

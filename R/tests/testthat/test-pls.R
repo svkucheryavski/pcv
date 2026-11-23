@@ -229,8 +229,8 @@ runtests <- function(X, Y, tolerance = 10^-6, save.res = FALSE) {
       rpv.g <- plspv(X, Y, Xpv.g, ncomp = ncomp, center = center, scale = scale)
 
       # here we expect that the results are almost identical
-      expect_equivalent(rcv.g$Yp, rpv.g$Yp, tolerance = tolerance)
-      expect_equivalent(rcv.g$RMSE, rpv.g$RMSE, tolerance = tolerance)
+      expect_equal(rcv.g$Yp, rpv.g$Yp, tolerance = tolerance, check.attributes = FALSE)
+      expect_equal(rcv.g$RMSE, rpv.g$RMSE, tolerance = tolerance, check.attributes = FALSE)
 
       # test local results
       set.seed(42)
@@ -247,9 +247,9 @@ runtests <- function(X, Y, tolerance = 10^-6, save.res = FALSE) {
       })
 
       # here we expect a good match — slope = 1±0.03 and correlation >= 0.97
-      expect_equivalent(abs(err[1, ]), rep(0, ncomp), tolerance = 0.50)
-      expect_equivalent(err[2, ], rep(1, ncomp), tolerance = 0.03)
-      expect_equivalent(err[3, ], rep(1, ncomp), tolerance = 0.03)
+      expect_equal(abs(err[1, ]), rep(0, ncomp), tolerance = 0.50, check.attributes = FALSE)
+      expect_equal(err[2, ], rep(1, ncomp), tolerance = 0.03, check.attributes = FALSE)
+      expect_equal(err[3, ], rep(1, ncomp), tolerance = 0.03, check.attributes = FALSE)
 
       # test scalars
       Dg <- attr(Xpv.g, "D")
@@ -267,8 +267,6 @@ runtests <- function(X, Y, tolerance = 10^-6, save.res = FALSE) {
    }
 }
 
-
-context("Tests for 'pcvpls()':")
 
 test_that("automatic tests for Simdata data are passed.", {
 
@@ -307,8 +305,8 @@ test_that("manual tests for Corn data are passed.", {
    rpv.g <- plspv(X, Y, Xpv.g, ncomp = ncomp, center = center, scale = scale)
 
    # predicted vales and errors must be identical
-   expect_equivalent(rcv.g$Yp, rpv.g$Yp)
-   expect_equivalent(rcv.g$RMSE, rpv.g$RMSE)
+   expect_equal(rcv.g$Yp, rpv.g$Yp, check.attributes = FALSE)
+   expect_equal(rcv.g$RMSE, rpv.g$RMSE, check.attributes = FALSE)
 
    # scalars do not exceed range [0, 2.1]
    Dg <- attr(Xpv.g, "D")
@@ -363,5 +361,31 @@ test_that("visual tests for Corn data looks good.", {
    plotpredictions(Y, rcl.g, rcv.g, rpv.g, 20, main = "Global, a = 20")
    plotpredictions(Y, rcl.l, rcv.l, rpv.l,  4, main = "Local, a = 4")
    plotpredictions(Y, rcl.l, rcv.l, rpv.l, 20, main = "Local, a = 20")
+})
+
+test_that("edge cases: constant column, small data, invalid cv.scope.", {
+
+   data(corn)
+   X <- corn$spectra
+   Y <- corn$moisture
+
+   # data with a constant column — tests epsilon protection on scaling and D
+   Xc <- cbind(X, rep(42, nrow(X)))
+   set.seed(42)
+   Xpv <- pcvpls(Xc, Y, ncomp = 5, scale = TRUE, cv = list("ven", 4))
+   D <- attr(Xpv, "D")
+   expect_equal(nrow(Xpv), nrow(Xc))
+   expect_equal(ncol(Xpv), ncol(Xc))
+   expect_false(any(is.nan(Xpv)))
+   expect_false(any(is.nan(D)))
+
+   # small dataset (6 rows) — tests ncomp auto-reduction
+   set.seed(42)
+   Xpv <- pcvpls(X[1:6, ], Y[1:6], ncomp = 20, cv = list("ven", 3))
+   expect_equal(nrow(Xpv), 6)
+   expect_false(any(is.nan(Xpv)))
+
+   # invalid cv.scope should error
+   expect_error(pcvpls(X, Y, ncomp = 5, cv.scope = "wrong"), "should be one of")
 })
 

@@ -23,7 +23,9 @@
 #' @importFrom stats sd
 #'
 #' @export
-pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20), nseg = 4, scale = FALSE) {
+pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, ncol(X), 20), nseg = 4, scale = FALSE) {
+
+   .Deprecated("pcvpca")
 
    # keep names if any
    attrs <- attributes(X)
@@ -57,8 +59,7 @@ pcv <- function(X, ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20), nseg = 4, s
       P.k <- svd(X.c, nv = ncomp)$v[, seq_len(ncomp), drop = FALSE]
 
       # correct direction of loadings for local model
-      a <- acos(colSums(P * P.k)) < pi / 2
-      P.k <- P.k %*% diag(a * 2 - 1, ncol(P), ncol(P))
+      P.k <- P.k %*% flipSigns(P, P.k)
 
       # get rotation matrix between the PC spaces
       R <- getR(P.k, P)

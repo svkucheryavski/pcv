@@ -76,7 +76,8 @@ function [Xpv, D] = pcvpcr(X, Y, nComp, Center, Scale, CV, CVScope)
    % computes a local PCR model
    function mk = getlocalmodel(Xc, Yc, m)
       [~, ~, Pk] = svds(Xc, m.nComp);
-      aa = acos(sum(m.P .* Pk)) < (pi / 2);
+      cosines = min(max(sum(m.P .* Pk), -1), 1);
+      aa = acos(cosines) < (pi / 2);
       
       Pk = Pk * diag(aa * 2 - 1);
       Tc = Xc * Pk;
@@ -87,7 +88,9 @@ function [Xpv, D] = pcvpcr(X, Y, nComp, Center, Scale, CV, CVScope)
    % computes PV-set for current segment
    function [Xpv, Dk] = getxpv(m, mk, Xk)
       Tk = Xk * mk.P;
-      Dk = diag(mk.C(:) ./ m.C(:));
+      d = mk.C(:) ./ m.C(:);
+      d(abs(m.C(:)) < eps) = 0;
+      Dk = diag(d);
       Tpv = Tk * Dk;
       Xpv = Tpv * m.P';
    end

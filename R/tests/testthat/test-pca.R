@@ -224,8 +224,8 @@ runtests <- function(X, save.res = FALSE) {
       rcv.g <- pcacvglobal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
       rpv.g <- pcapv(X, Xpv.g, ncomp = ncomp, center = center, scale = scale)
 
-      expect_equivalent(rcv.g$H, rpv.g$H)
-      expect_equivalent(rcv.g$Q, rpv.g$Q)
+      expect_equal(rcv.g$H, rpv.g$H, check.attributes = FALSE)
+      expect_equal(rcv.g$Q, rpv.g$Q, check.attributes = FALSE)
 
       # test results for local scope
       set.seed(42)
@@ -235,8 +235,8 @@ runtests <- function(X, save.res = FALSE) {
       rcv.l <- pcacvlocal(X, ncomp = ncomp, cv = cv, center = center, scale = scale)
       rpv.l <- pcapv(X, Xpv.l, ncomp = ncomp, center = center, scale = scale)
 
-      expect_equivalent(rcv.l$H, rpv.l$H)
-      expect_equivalent(rcv.l$Q, rpv.l$Q)
+      expect_equal(rcv.l$H, rpv.l$H, check.attributes = FALSE)
+      expect_equal(rcv.l$Q, rpv.l$Q, check.attributes = FALSE)
 
       # save outcomes as reference
       if (save.res && cv[[1]] != "rand") {
@@ -245,8 +245,6 @@ runtests <- function(X, save.res = FALSE) {
    }
 }
 
-
-context("Tests for 'pcvpca()':")
 
 test_that("automatic tests for People data are passed.", {
 
@@ -336,4 +334,45 @@ test_that("visual tests for Corn data looks good.", {
    plotdistance(rcl.l, rcv.l, rpv.l,  4, main = "Local, a = 4")
    plotdistance(rcl.l, rcv.l, rpv.l, 20, main = "Local, a = 20")
 
+})
+
+test_that("edge cases: constant column, small data, invalid cv.scope.", {
+
+   data(corn)
+   X <- corn$spectra
+
+   # data with a constant column appended — tests epsilon protection on std dev
+   Xc <- cbind(X, rep(42, nrow(X)))
+   nc <- ncol(Xc)
+   set.seed(42)
+   Xpv <- pcvpca(Xc, ncomp = 5, scale = TRUE, cv = list("ven", 4))
+   expect_equal(nrow(Xpv), nrow(Xc))
+   expect_equal(ncol(Xpv), ncol(Xc))
+   expect_false(any(is.nan(Xpv)))
+
+   # the constant column must be reproduced as is, not dropped or zeroed: after centering it
+   # is exactly zero, contributes nothing to the model, and uncentering restores the constant
+   expect_equal(Xpv[, nc], rep(42, nrow(Xc)), ignore_attr = TRUE)
+
+   # same must hold for the local scope
+   set.seed(42)
+   Xpv <- pcvpca(Xc, ncomp = 5, scale = TRUE, cv = list("ven", 4), cv.scope = "local")
+   expect_equal(Xpv[, nc], rep(42, nrow(Xc)), ignore_attr = TRUE)
+
+   # without centering the constant column carries variance for the uncentered decomposition,
+   # so it is a part of the model — here we only require finite values of a correct size
+   set.seed(42)
+   Xpv <- pcvpca(Xc, ncomp = 5, center = FALSE, scale = TRUE, cv = list("ven", 4))
+   expect_equal(dim(Xpv), dim(Xc))
+   expect_true(all(is.finite(Xpv)))
+
+   # small dataset (6 rows) — tests ncomp auto-reduction
+   Xs <- X[1:6, ]
+   set.seed(42)
+   Xpv <- pcvpca(Xs, ncomp = 20, cv = list("ven", 3))
+   expect_equal(nrow(Xpv), 6)
+   expect_false(any(is.nan(Xpv)))
+
+   # invalid cv.scope should error
+   expect_error(pcvpca(X, ncomp = 5, cv.scope = "wrong"), "should be one of")
 })

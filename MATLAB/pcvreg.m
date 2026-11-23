@@ -24,6 +24,10 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
    nResp = size(Y, 2);
    
 
+   if ~ismember(CVScope, ["global", "local"])
+      error('pcvreg: parameter "CVScope" must be "global" or "local".');
+   end
+
    % compute indices for cross-validation
    ind = crossval(CV, nRows, Y);
    
@@ -47,7 +51,9 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
 
    if Scale
       sXg = std(X);
+      sXg(sXg < eps) = 1;
       sYg = std(Y);
+      sYg(sYg < eps) = 1;
    else
       sXg = ones(1, nPred);
       sYg = ones(1, nResp);
@@ -87,7 +93,9 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
 
          if Scale
             sX = std(Xc);
+            sX(sX < eps) = 1;
             sY = std(Yc);
+            sY(sY < eps) = 1;
          else
             sX = ones(1, nPred);
             sY = ones(1, nResp);

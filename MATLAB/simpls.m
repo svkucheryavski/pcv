@@ -30,6 +30,7 @@ function [P, R, C] = simpls(X, Y, nComp)
       t = X * r;
 
       tnorm = sqrt(sum(t .* t));
+      if tnorm < eps, break; end
       t = t / tnorm;
       r = r / tnorm;
 
@@ -43,7 +44,9 @@ function [P, R, C] = simpls(X, Y, nComp)
          u = u - T * (T' * u);
       end
 
-      v = v / sqrt(sum(v .* v));
+      vnorm = sqrt(sum(v .* v));
+      if vnorm < eps, break; end
+      v = v / vnorm;
 
       R(:, a) = r;
       V(:, a) = v;

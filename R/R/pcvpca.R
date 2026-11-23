@@ -48,7 +48,7 @@
 #'
 #' @references
 #' 1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-#' regression models. Analytica Chimica Acta, 1255 (2022)
+#' regression models. Analytica Chimica Acta, 1255, 2023.
 #' [https://doi.org/10.1016/j.aca.2023.341096]
 #'
 #' @examples
@@ -73,6 +73,8 @@
 #' @export
 pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4),
    center = TRUE, scale = FALSE, cv.scope = "global") {
+
+   cv.scope <- match.arg(cv.scope, c("global", "local"))
 
    # keep names if any
    attrs <- attributes(X)
@@ -139,8 +141,7 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
       P.k <- m.k$v
 
       # correct direction of loadings for local model
-      a <- acos(colSums(P * P.k)) < pi / 2
-      P.k <- P.k %*% diag(a * 2 - 1, ncol(P), ncol(P))
+      P.k <- P.k %*% flipSigns(P, P.k)
 
       # get scores and residuals by projection local validation set to the local model
       T.k <- X.k %*% P.k

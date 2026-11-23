@@ -57,6 +57,10 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
        Center = true;
    end
 
+   if ~ismember(CVScope, ["global", "local"])
+      error('pcvpca: parameter "CVScope" must be "global" or "local".');
+   end
+
    % compute indices for cross-validation
    ind = crossval(CV, nRows);
 
@@ -78,6 +82,7 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
 
    if Scale
       sX = std(X);
+      sX(sX < eps) = 1;
    else
       sX = ones(1, nCols);
    end
@@ -105,7 +110,7 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
       % compute mean and standard deviation and autoscale locally in case of local scope
       if CVScope == "local"
          if Center, mXl = mean(Xc); else, mXl = zeros(1, nCols); end
-         if Scale, sXl = std(Xc); else, sXl = ones(1, nCols); end
+         if Scale, sXl = std(Xc); sXl(sXl < eps) = 1; else, sXl = ones(1, nCols); end
          Xc = (Xc - mXl) ./ sXl;
          Xk = (Xk - mXl) ./ sXl;
       end
@@ -114,7 +119,8 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
       [~, ~, Pk] = svds(Xc, nComp);
 
       % correct direction of loadings for local model
-      a = acos(sum(P .* Pk)) < pi / 2;
+      cosines = min(max(sum(P .* Pk), -1), 1);
+      a = acos(cosines) < pi / 2;
       Pk = Pk * diag(a * 2 - 1);      
       
       % compute explained part of Xpv

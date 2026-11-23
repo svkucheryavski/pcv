@@ -5,7 +5,11 @@ function xpvorth = getxpvorth(qk, Xk, PRM)
 
    % compute the orthogonal component of Xpv
    xpvorth = rand(nObj) * Xk;                                % - project Xk to a random vector
-   xpvorth = xpvorth * diag(1 ./ sqrt(sum(xpvorth.^2)));     % - normalize columns
+   colnorms = sqrt(sum(xpvorth.^2));
+   colnorms(colnorms < eps) = 1;
+   xpvorth = xpvorth * diag(1 ./ colnorms);                  % - normalize columns
    xpvorth = xpvorth * PRM;                                  % - orthogonalize to global component space
-   xpvorth = diag(sqrt(qk ./ sum(xpvorth.^2, 2))) * xpvorth; % - rescale rows
+   rownorms = sqrt(sum(xpvorth.^2, 2));
+   rownorms(rownorms < eps) = 1;
+   xpvorth = diag(sqrt(qk) ./ rownorms) * xpvorth;           % - rescale rows
 end

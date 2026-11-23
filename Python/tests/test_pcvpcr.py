@@ -4,7 +4,7 @@ import math
 
 from src.prcv.misc import get_cvsettings
 from src.prcv.methods import pcvpcr, get_pcamodel
-from .common import test_reference_cases
+from .common import run_reference_cases
 
 
 ################################
@@ -20,8 +20,8 @@ def pcr_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, cente
     (nrows, ncols) = X.shape
 
     # correct shape of Y just in case
-    if Y.shape is (nrows, ):
-        Y.reshape(nrows, 1)
+    if Y.ndim == 1:
+        Y = Y.reshape(-1, 1)
 
     nresp = 1
 
@@ -65,7 +65,7 @@ def pcr_predict(X: np.ndarray, Y: np.ndarray, Xpv: np.ndarray, ncomp: int, cente
     return {'Yp': Ypv, 'T': Tpv, 'H': Hpv, 'Q': Qpv, 'RMSE': np.sqrt((Epv * Epv).mean(axis = 0))}
 
 
-def test_pcrcase(X, Y, ncomp, cv, center, scale, D, T, Yp):
+def check_pcrcase(X, Y, ncomp, cv, center, scale, D, T, Yp):
     """
     Create PCR global model, apply it to generated Xpv set and test equality of
     main outcomes (predictions and errors) entered manually from R tests.
@@ -83,7 +83,7 @@ def test_pcrcase(X, Y, ncomp, cv, center, scale, D, T, Yp):
     )
 
 
-def test_pcrcase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
+def check_pcrcase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
     """
     Create PCR global model, apply it to generated Xpv set and test equality of
     main outcomes (predictions and scalars) taken from a
@@ -145,7 +145,7 @@ class TestPCVPCRMethods(unittest.TestCase):
         center = True
         scale = True
 
-        test_pcrcase(self.X, self.Y, ncomp = ncomp, cv = cv, center=center, scale=scale,
+        check_pcrcase(self.X, self.Y, ncomp = ncomp, cv = cv, center=center, scale=scale,
             D = [
                 0.8928038, 0.6953515,  1.7268124,
                 0.9272071, 1.4768482, -0.4511441,
@@ -177,7 +177,44 @@ class TestPCVPCRMethods(unittest.TestCase):
 
     def test_references(self):
         """ Test combination of settings by comparing with reference values. """
-        test_reference_cases('pcvpcr', test_pcrcase_ref)
+        run_reference_cases('pcvpcr', check_pcrcase_ref)
+
+
+class TestPCVPCREdgeCases(unittest.TestCase):
+
+    def setUp(self):
+        self.Y = np.array([32, 35, 36, 37, 42, 43, 43, 44]).reshape(8, 1)
+        self.X = np.array([
+            150, 41, 28000, 119,
+            160, 48, 31000, 129,
+            166, 47, 28000, 112,
+            166, 49, 14000, 123,
+            175, 67, 38000, 105,
+            180, 80, 30000, 129,
+            181, 75, 31000, 105,
+            180, 81, 42000, 113
+        ]).reshape(8, 4).astype(float)
+
+    def test_constant_column(self):
+        """ Data with a constant column - tests epsilon protection on scaling and D. """
+        Xc = np.hstack([self.X, np.full((self.X.shape[0], 1), 42.0)])
+        np.random.seed(42)
+        Xpv, D = pcvpcr(Xc, self.Y, ncomp=3, scale=True, cv={'type': 'ven', 'nseg': 4})
+        self.assertEqual(Xpv.shape, Xc.shape)
+        self.assertFalse(np.any(np.isnan(Xpv)))
+        self.assertFalse(np.any(np.isnan(D)))
+
+    def test_small_dataset(self):
+        """ Small dataset (6 rows) - tests ncomp auto-reduction. """
+        np.random.seed(42)
+        Xpv, D = pcvpcr(self.X[:6, :], self.Y[:6, :], ncomp=10, cv={'type': 'ven', 'nseg': 3})
+        self.assertEqual(Xpv.shape[0], 6)
+        self.assertFalse(np.any(np.isnan(Xpv)))
+
+    def test_invalid_cvscope(self):
+        """ Invalid cvscope should raise ValueError. """
+        self.assertRaises(ValueError, pcvpcr, self.X, self.Y, 3, cvscope='wrong')
+
 
 if __name__ == '__main__':
     unittest.main()

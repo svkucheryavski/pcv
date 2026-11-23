@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 import os
 
-def test_reference_cases(dirname, test_fun):
+def run_reference_cases(dirname, test_fun):
     """
     Run several tests by combining PCV parameters and compare outcomes with
     reference data from R.

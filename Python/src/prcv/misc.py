@@ -12,7 +12,7 @@ def get_splits(nrows: int, nseg: int):
     Generate vector with segment numbers.
     """
     nrep = math.ceil(nrows / nseg)
-    return np.matlib.repmat(np.arange(1, nseg + 1, dtype = int), 1, nrep)[0, :nrows]
+    return np.tile(np.arange(1, nseg + 1, dtype = int), nrep)[:nrows]
 
 
 

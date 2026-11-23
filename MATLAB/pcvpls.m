@@ -75,8 +75,9 @@ function [Xpv, D] = pcvpls(X, Y, nComp, Center, Scale, CV, CVScope)
    function mk = getlocalmodel(Xc, Yc, m)
       [Pk, Rk, Ck] = simpls(Xc, Yc, m.nComp);
 
-      normalize = @(X) X .* (1 ./ sqrt(sum(X.^2)));
-      aa = acos(sum((normalize(m.R)) .* normalize(Rk))) < (pi / 2);
+      normalize = @(X) X ./ max(sqrt(sum(X.^2)), eps);
+      cosines = min(max(sum(normalize(m.R) .* normalize(Rk)), -1), 1);
+      aa = acos(cosines) < (pi / 2);
       Pk = Pk * diag(aa * 2 - 1);
       Rk = Rk * diag(aa * 2 - 1);
       Ck = Ck * diag(aa * 2 - 1);
@@ -89,7 +90,12 @@ function [Xpv, D] = pcvpls(X, Y, nComp, Center, Scale, CV, CVScope)
       Tk = Xk * mk.R;
       Dk = eye(m.nComp);
       for a = 1:m.nComp
-         Dk(a, a) = (mk.C(:, a)' * m.C(:, a)) ./ (m.C(:, a)' * m.C(:, a));
+         denom = m.C(:, a)' * m.C(:, a);
+         if abs(denom) < eps
+            Dk(a, a) = 0;
+         else
+            Dk(a, a) = (mk.C(:, a)' * m.C(:, a)) / denom;
+         end
       end
       Tpv = Tk * Dk;
       Xpv = Tpv * m.P';

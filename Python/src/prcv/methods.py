@@ -69,7 +69,8 @@ def pcvpls(X: np.ndarray,
     References:
     -----------
     1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-    regression models. Analytica Chimica Acta, 1255 (2022) DOI: https://doi.org/10.1016/j.aca.2023.341096
+    regression models. Analytica Chimica Acta, 1255, 2023.
+    DOI: https://doi.org/10.1016/j.aca.2023.341096
     """
 
     def get_globalmodel(X: np.ndarray, Y: np.ndarray, ncomp: int) -> dict:
@@ -83,11 +84,11 @@ def pcvpls(X: np.ndarray,
     def get_localmodel(Xc: np.ndarray, Yc: np.ndarray, m: dict) -> dict:
         """ Create a local PLS model. """
         ncols = Xc.shape[1]
-        Rk, Pk, Ck = simpls(Xc, Yc, ncomp)
-        a = np.arccos((normalize(m['R']) * normalize(Rk)).sum(axis = 0)) < math.pi / 2
-        Pk = Pk * (2 * a - 1)
-        Rk = Rk * (2 * a - 1)
-        Ck = Ck * (2 * a - 1)
+        Rk, Pk, Ck = simpls(Xc, Yc, m['ncomp'])
+        signs = flip_signs(normalize(m['R']), normalize(Rk))
+        Pk = Pk * signs
+        Rk = Rk * signs
+        Ck = Ck * signs
         PRM = np.eye(ncols) - np.dot(Rk, Pk.T)
         return {'R': Rk, 'P': Pk, 'C': Ck, 'PRM': PRM}
 
@@ -99,7 +100,8 @@ def pcvpls(X: np.ndarray,
         for a in range(0, m['ncomp']):
             ca = m['C'][..., a]
             cka = mk['C'][..., a]
-            dk[a] = np.dot(cka.T, ca) / np.dot(ca.T, ca)
+            denom = np.dot(ca.T, ca)
+            dk[a] = 0.0 if denom < eps else np.dot(cka.T, ca) / denom
 
         Tpvk = Tk * dk
         Xpvk_hat = np.dot(Tpvk, m['P'].T)
@@ -184,7 +186,8 @@ def pcvpcr(X: np.ndarray,
     References:
     -----------
     1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-    regression models. Analytica Chimica Acta, 1255 (2022) DOI: https://doi.org/10.1016/j.aca.2023.341096
+    regression models. Analytica Chimica Acta, 1255, 2023.
+    DOI: https://doi.org/10.1016/j.aca.2023.341096
     """
 
     def get_globalmodel(X: np.ndarray, Y: np.ndarray, ncomp: int) -> dict:
@@ -193,7 +196,7 @@ def pcvpcr(X: np.ndarray,
         P, s = get_pcamodel(X, ncomp)
         PRM = np.eye(ncols) - np.dot(P, P.T)
         T = np.dot(X, P)
-        C = np.dot(Y.T, T) / (s * s)
+        C = np.dot(Y.T, T) / (T * T).sum(axis=0)
         return {'P': P, 'C': C, 'PRM': PRM, 'ncomp': ncomp}
 
 
@@ -201,17 +204,16 @@ def pcvpcr(X: np.ndarray,
         """ Create a local PCR model. """
         ncols = Xc.shape[1]
         Pk, sk = get_pcamodel(Xc, m['ncomp'])
-        a = np.arccos((m['P'] * Pk).sum(axis = 0)) < math.pi / 2
-        Pk = Pk * (2 * a - 1)
+        Pk = Pk * flip_signs(m['P'], Pk)
         PRMk = np.eye(ncols) - np.dot(Pk, Pk.T)
         Tc = np.dot(Xc, Pk)
-        Ck = np.dot(Yc.T, Tc) / (sk * sk)
+        Ck = np.dot(Yc.T, Tc) / (Tc * Tc).sum(axis=0)
         return {'P': Pk, 'C': Ck, 'PRM': PRMk}
 
     def get_xpvhat(m: dict, mk: dict, Xk: np.ndarray):
         """ Compute explained part of Xpv for current segment k. """
         Tk = np.dot(Xk, mk['P'])
-        dk = mk['C'] / m['C']
+        dk = np.where(np.abs(m['C']) < eps, 0.0, mk['C'] / m['C'])
         Tpvk = Tk * dk
         Xpvk_hat = np.dot(Tpvk, m['P'].T)
         return (Xpvk_hat, dk)
@@ -275,11 +277,14 @@ def pcvreg(X: np.ndarray,
 
     """
 
+    if cvscope not in ('global', 'local'):
+        raise ValueError('argument "cvscope" should be one of "global" or "local".')
+
     (nrows, ncols) = X.shape
 
     # correct shape of Y just in case
-    if Y.shape is (nrows, ):
-        Y.reshape(nrows, 1)
+    if Y.ndim == 1:
+        Y = Y.reshape(-1, 1)
 
     nresp = Y.shape[1]
 
@@ -292,14 +297,11 @@ def pcvreg(X: np.ndarray,
     mY = Y.mean(axis = 0) if center else np.zeros(nresp)
     sY = Y.std(axis = 0, ddof = 1) if scale else np.ones(nresp)
 
-    is_const_X = np.allclose(X - mX, 0.0, atol=eps, rtol=0.0)
-    sX[is_const_X] <- 1.0 - eps;
+    sX[sX < eps] = 1.0
+    sY[sY < eps] = 1.0
 
-    is_const_Y = np.allclose(Y - mY, 0.0, atol=eps, rtol=0.0)
-    sY[is_const_Y] <- 1.0 - eps;
-
-    X = (X - mX) / (sX + eps)
-    Y = (Y - mY) / (sY + eps)
+    X = (X - mX) / sX
+    Y = (Y - mY) / sY
 
 
     # create a global model
@@ -325,15 +327,12 @@ def pcvreg(X: np.ndarray,
             mYl = Yc.mean(axis = 0) if center else np.zeros(nresp)
             sYl = Yc.std(axis = 0, ddof = 1) if scale else np.ones(nresp)
 
-            is_const_X = np.allclose(Xc - mXl, 0.0, atol=eps, rtol=0.0)
-            sXl[is_const_X] <- 1.0 - eps
+            sXl[sXl < eps] = 1.0
+            sYl[sYl < eps] = 1.0
 
-            is_const_Y = np.allclose(Yc - mYl, 0.0, atol=eps, rtol=0.0)
-            sYl[is_const_Y] <- 1.0 - eps
-
-            Xc = (Xc - mXl) / (sXl + eps)
-            Yc = (Yc - mYl) / (sYl + eps)
-            Xk = (Xk - mXl) / (sXl + eps)
+            Xc = (Xc - mXl) / sXl
+            Yc = (Yc - mYl) / sYl
+            Xk = (Xk - mXl) / sXl
 
         # get local model
         mk = funlist['get_localmodel'](Xc, Yc, m)
@@ -410,8 +409,12 @@ def pcvpca(X: np.ndarray,
     References:
     -----------
     1. S. Kucheryavskiy, O. Rodionova, A. Pomerantsev. Procrustes cross-validation of multivariate
-    regression models. Analytica Chimica Acta, 1255 (2022) DOI: https://doi.org/10.1016/j.aca.2023.341096
+    regression models. Analytica Chimica Acta, 1255, 2023.
+    DOI: https://doi.org/10.1016/j.aca.2023.341096
     """
+
+    if cvscope not in ('global', 'local'):
+        raise ValueError('argument "cvscope" should be one of "global" or "local".')
 
     (nrows, ncols) = X.shape
 
@@ -421,9 +424,8 @@ def pcvpca(X: np.ndarray,
     # compute global mean and standard deviation and autoscale the whole data
     mX = X.mean(axis = 0) if center else np.zeros(ncols)
     sX = X.std(axis = 0, ddof = 1) if scale else np.ones(ncols)
-    is_const_X = np.allclose(X - mX, 0.0, atol=eps, rtol=0.0)
-    sX[is_const_X] <- 1.0 - eps
-    X = (X - mX) / (sX + eps)
+    sX[sX < eps] = 1.0
+    X = (X - mX) / sX
 
 
     # create a global model
@@ -446,16 +448,14 @@ def pcvpca(X: np.ndarray,
         if cvscope == 'local':
             mXl = Xc.mean(axis = 0) if center else np.zeros(ncols)
             sXl = Xc.std(axis = 0, ddof = 1) if scale else np.ones(ncols)
-            is_const_X = np.allclose(Xc - mXl, 0.0, atol=1e-12, rtol=0.0)
-            sXl[is_const_X] <- 1.0 - eps
+            sXl[sXl < eps] = 1.0
 
-            Xc = (Xc - mXl) / (sXl + eps)
-            Xk = (Xk - mXl) / (sXl + eps)
+            Xc = (Xc - mXl) / sXl
+            Xk = (Xk - mXl) / sXl
 
         # get local model and correct directions of the loadings
         Pk, sk = get_pcamodel(Xc, cvncomp)
-        a = np.arccos((P * Pk).sum(axis = 0)) < math.pi / 2
-        Pk = Pk * (2 * a - 1)
+        Pk = Pk * flip_signs(P, Pk)
 
         # get scores and residuals by projection local validation set to the local model
         Tk = np.dot(Xk, Pk)
@@ -520,28 +520,47 @@ def get_xpvorth(qk: np.ndarray, Xk: np.ndarray, PRM: np.ndarray) -> np.ndarray:
 def normalize(X: np.ndarray, axis: int = 0) -> np.ndarray:
     """ Normalize rows or columns of X to Euclidean norm. """
     norm = np.sqrt((X * X).sum(axis = axis))
+    norm = np.where(norm < eps, 1.0, norm)
     return X / norm
+
+
+def flip_signs(V1: np.ndarray, V2: np.ndarray) -> np.ndarray:
+    """
+    Return array of +1/-1 signs for direction correction of local loadings.
+
+    Compares column directions of two matrices and returns +1 if angle < 90 degrees,
+    -1 otherwise. Input dot products are clamped to [-1, 1] before arccos to avoid
+    NaN from floating-point overshoot.
+    """
+    cosines = np.clip((V1 * V2).sum(axis=0), -1, 1)
+    return 2 * (np.arccos(cosines) < math.pi / 2) - 1
 
 def simpls(X: np.ndarray, Y: np.ndarray, ncomp: int):
     """
-#' SIMPLS algorithm
-#'
-#' @description
-#' SIMPLS algorithm for calibration of PLS model
-#'
-#' @param X
-#' a matrix with x values (predictors)
-#' @param Y
-#' a matrix with y values (responses)
-#' @param ncomp
-#' number of components to calculate
-#'
-#' @return
-#' a list with computed weights, x- and y-loadings for PLS regression model.
-#'
-#' @references
-#' [1]. S. de Jong. SIMPLS: An Alternative approach to partial least squares regression.
-#' Chemometrics and Intelligent Laboratory Systems, 18, 1993 (251-263).
+    SIMPLS algorithm for calibration of PLS model.
+
+    Parameters:
+    -----------
+    X : numpy.ndarray
+        Matrix with x values (predictors).
+    Y : numpy.ndarray
+        Matrix with y values (responses).
+    ncomp : int
+        Number of components to calculate.
+
+    Returns:
+    --------
+    R : numpy.ndarray
+        Weights matrix.
+    P : numpy.ndarray
+        X-loadings matrix.
+    C : numpy.ndarray
+        Y-loadings matrix.
+
+    References:
+    -----------
+    1. S. de Jong. SIMPLS: An Alternative approach to partial least squares regression.
+    Chemometrics and Intelligent Laboratory Systems, 18, 1993 (251-263).
     """
 
     (nrows, ncols) = X.shape
@@ -561,6 +580,8 @@ def simpls(X: np.ndarray, Y: np.ndarray, ncomp: int):
         r = Vl[..., :1]
         t = np.dot(X, r)
         tnorm = math.sqrt((t * t).sum())
+        if tnorm < eps:
+            break
         t = t / tnorm
         r = r / tnorm
 
@@ -573,7 +594,10 @@ def simpls(X: np.ndarray, Y: np.ndarray, ncomp: int):
             v = v - np.dot(V, np.dot(V.T, p))
             u = u - np.dot(T, np.dot(T.T, u))
 
-        v = v / math.sqrt((v * v).sum())
+        vnorm = math.sqrt((v * v).sum())
+        if vnorm < eps:
+            break
+        v = v / vnorm
 
         R[..., a] = r.flatten()
         V[..., a] = v.flatten()

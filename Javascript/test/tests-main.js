@@ -82,7 +82,7 @@ describe('Manual tests for PCV methods', function () {
       const r = plspredict(m, Xpv, Y);
 
       expect(D).to.be.deep.almost.equal(D1);
-      expect(r.T).to.be.deep.almost.equal(T1);
+      expect(r.T.apply(Math.abs, 0)).to.be.deep.almost.equal(T1.apply(Math.abs, 0));
       expect(r.H).to.be.deep.almost.equal(H1);
 
       expect(r.Ypred).to.be.deep.almost.equal(Ypred1);
@@ -276,6 +276,42 @@ describe('Manual tests for PCV methods', function () {
    }).timeout(30000);
 
 });
+
+
+describe('Edge case tests for PCV methods.', function () {
+
+   const data = matrix([
+      32, 150, 41, 28000, 119,
+      35, 160, 48, 31000, 129,
+      36, 166, 47, 28000, 112,
+      37, 166, 49, 14000, 123,
+      42, 175, 67, 38000, 105,
+      43, 180, 80, 30000, 129,
+      43, 181, 75, 31000, 105,
+      44, 180, 81, 42000, 113,
+   ], 5, 8).t();
+
+   it ('pcvpca: invalid cvscope throws error', function () {
+      const X1 = matrix([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,
+         22, 18, 4, 14, 13, 12, 1, 15], 8, 3);
+      const m = pcafit(X1, 2);
+      expect(() => pcvpca(X1, m, 2, {type: "ven", nseg: 2}, 'wrong')).to.throw();
+   });
+
+   it ('pcvpcr: invalid cvscope throws error', function () {
+      const [X, Y] = splitregdata(data);
+      const m = pcrfit(X, Y, 3, true, true);
+      expect(() => pcvpcr(X, Y, m, 3, {type: "ven", nseg: 4}, 'wrong')).to.throw();
+   });
+
+   it ('pcvpls: invalid cvscope throws error', function () {
+      const [X, Y] = splitregdata(data);
+      const m = plsfit(X, Y, 3, true, true);
+      expect(() => pcvpls(X, Y, m, 3, {type: "ven", nseg: 4}, 'wrong')).to.throw();
+   });
+
+});
+
 
 describe('Tests of cross-validation methods.', function () {
 

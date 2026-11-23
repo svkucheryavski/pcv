@@ -4,7 +4,7 @@ import unittest
 import math
 
 from src.prcv.methods import pcvpca, get_pcamodel, get_xpvorth
-from .common import test_reference_cases
+from .common import run_reference_cases
 
 
 
@@ -47,7 +47,7 @@ def pca_predict(X: np.ndarray, Xpv: np.ndarray, ncomp: int, center: bool = True,
     return {'T': Tpv, 'H': Hpv, 'Q': Qpv}
 
 
-def test_pcacase(X, ncomp, cv, center, scale, T, H, Q):
+def check_pcacase(X, ncomp, cv, center, scale, T, H, Q):
     """
     Create PCA global model, apply it to generated Xpv set and test equality of
     main outcomes (scores, score distances and orthogonal distances) entered manually
@@ -61,7 +61,7 @@ def test_pcacase(X, ncomp, cv, center, scale, T, H, Q):
     np.testing.assert_array_almost_equal(r['Q'], np.array(Q).reshape(X.shape[0], ncomp))
 
 
-def test_pcacase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
+def check_pcacase_ref(X, Y, ncomp, cv, center, scale, path, file_suffix):
     """
     Create PCA global model, apply it to generated Xpv set and test equality of
     main outcomes (scores, score distances and orthogonal distances) taken from a
@@ -117,7 +117,7 @@ class TestPCVPCAMethods(unittest.TestCase):
         center = True
         scale = False
 
-        test_pcacase(self.X, ncomp, cv, center, scale,
+        check_pcacase(self.X, ncomp, cv, center, scale,
             T = [
                 -10.0140380, -8.5235218, -3.2171212,
                 -8.6658232, -4.0965210, 1.7038996,
@@ -160,7 +160,7 @@ class TestPCVPCAMethods(unittest.TestCase):
         center = True
         scale = False
 
-        test_pcacase(self.X, ncomp, cv, center, scale,
+        check_pcacase(self.X, ncomp, cv, center, scale,
             T = [
                 -12.2937342,  -3.5829202,
                 -8.8832034,  -3.6204597,
@@ -203,7 +203,7 @@ class TestPCVPCAMethods(unittest.TestCase):
         center = True
         scale = False
 
-        test_pcacase(self.X, ncomp, cv, center, scale,
+        check_pcacase(self.X, ncomp, cv, center, scale,
             T = [
                 -9.39633799,
                 -8.75468266,
@@ -238,7 +238,7 @@ class TestPCVPCAMethods(unittest.TestCase):
 
     def test_references(self):
         """ Test combination of settings by comparing with reference values. """
-        test_reference_cases('pcvpca', test_pcacase_ref)
+        run_reference_cases('pcvpca', check_pcacase_ref)
 
 
 
@@ -256,6 +256,34 @@ class TestXpvOrthMethods(unittest.TestCase):
 
         self.assertEqual(Y.shape, Xk.shape)
         np.testing.assert_array_almost_equal((Y * Y).sum(axis = 1), qk)
+
+
+class TestPCVPCAEdgeCases(unittest.TestCase):
+
+    def test_constant_column(self):
+        """ Data with a constant column - tests epsilon protection on std dev. """
+        X = np.array([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,
+         22, 18, 4, 14, 13, 12, 1, 15]).reshape(3, 8).transpose()
+        Xc = np.hstack([X, np.full((X.shape[0], 1), 42.0)])
+        np.random.seed(42)
+        Xpv = pcvpca(Xc, ncomp=2, scale=True, cv={'type': 'ven', 'nseg': 2})
+        self.assertEqual(Xpv.shape, Xc.shape)
+        self.assertFalse(np.any(np.isnan(Xpv)))
+
+    def test_small_dataset(self):
+        """ Small dataset (6 rows) - tests ncomp auto-reduction. """
+        X = np.array([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,
+         22, 18, 4, 14, 13, 12, 1, 15]).reshape(3, 8).transpose()
+        np.random.seed(42)
+        Xpv = pcvpca(X[:6, :], ncomp=10, cv={'type': 'ven', 'nseg': 3})
+        self.assertEqual(Xpv.shape[0], 6)
+        self.assertFalse(np.any(np.isnan(Xpv)))
+
+    def test_invalid_cvscope(self):
+        """ Invalid cvscope should raise ValueError. """
+        X = np.array([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,
+         22, 18, 4, 14, 13, 12, 1, 15]).reshape(3, 8).transpose()
+        self.assertRaises(ValueError, pcvpca, X, 2, cvscope='wrong')
 
 
 if __name__ == '__main__':

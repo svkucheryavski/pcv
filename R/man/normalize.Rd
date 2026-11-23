@@ -4,11 +4,7 @@
 \alias{normalize}
 \title{Normalization rows or columns of a matrix}
 \usage{
-normalize(
-  X,
-  dim = 1,
-  weights = if (dim == 1) 1/sqrt(rowSums(X^2)) else 1/sqrt(colSums(X^2))
-)
+normalize(X, dim = 1, weights = NULL)
 }
 \arguments{
 \item{X}{matrix with numeric values}

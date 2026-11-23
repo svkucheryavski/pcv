@@ -19,3 +19,4 @@ A matrix with orthogonal part for Xpv
 \description{
 Generates the orthogonal part for Xpv
 }
+\keyword{internal}

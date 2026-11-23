@@ -6,7 +6,7 @@
 \usage{
 pcv(
   X,
-  ncomp = min(round(nrow(X)/nseg) - 1, col(X), 20),
+  ncomp = min(round(nrow(X)/nseg) - 1, ncol(X), 20),
   nseg = 4,
   scale = FALSE
 )

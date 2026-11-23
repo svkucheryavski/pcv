@@ -25,6 +25,8 @@
 pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4),
    center = TRUE, scale = FALSE, funlist = list(), cv.scope = "global") {
 
+   cv.scope <- match.arg(cv.scope, c("global", "local"))
+
    # convert to matrix and check the values
    X <- as.matrix(X)
    if (sum(is.na(X)) > 0) {
@@ -88,8 +90,8 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
    Xpv <- matrix(0, nRows, nPred)
    D <- matrix(0, nSeg, ncomp)
 
-   # this will be used only for PLS case
-   R <- array(0, dim = c(nSeg, nPred, ncomp))
+   # will be allocated lazily only for PLS case
+   R <- NULL
 
    # loop for computing the PV set
    for (k in seq_len(nSeg)) {
@@ -135,7 +137,10 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
       D[k, ] <- diag(pvres$D)
 
       # in case of PLS regression we save R as well
-      if (!is.null(pvres$R)) R[k, , ] <- pvres$R
+      if (!is.null(pvres$R)) {
+         if (is.null(R)) R <- array(0, dim = c(nSeg, nPred, ncomp))
+         R[k, , ] <- pvres$R
+      }
 
       # compute the orthogonal part of PV-set
       Xpv.orth <- getxpvorth(funlist$getqk(X.k, m.k), X.k, m$Pi)
@@ -155,7 +160,7 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
    attr(Xpv, "D") <- D
 
    # in case of PLS regression we save R as well
-   if (!is.null(pvres$R)) {
+   if (!is.null(R)) {
       attr(Xpv, "Rk") <- R
       attr(Xpv, "R") <- m$R
    }
