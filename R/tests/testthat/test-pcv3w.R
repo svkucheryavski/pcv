@@ -244,6 +244,22 @@ test_that("HSV reduces too large number of components with a warning", {
    expect_warning(P <- pcv3whsv(X, c(6, 6), cv = list("ven", 3), seed = 1), "reduced")
    expect_equal(attr(P, "ncomp"), c(4, 5))
    expect_hsv_cv(X, P, TRUE, "none")
+
+   # noiseless data of rank one: numerical rank decides
+   set.seed(1)
+   b <- runif(6)
+   c <- runif(5)
+   X <- outer(outer(rnorm(12), b), c) + 5
+   expect_warning(P <- pcv3whsv(X, c(3, 3), seed = 1), "reduced")
+   expect_equal(attr(P, "ncomp"), c(1, 1))
+   expect_hsv_cv(X, P, TRUE, "none")
+
+   # second component only in sample 1: local model without it has rank one
+   X <- outer(outer(rnorm(12), b), c)
+   X[1, , ] <- X[1, , ] + outer(runif(6), runif(5))
+   expect_warning(P <- pcv3whsv(X, c(2, 2), center = FALSE, seed = 1), "reduced")
+   expect_equal(attr(P, "ncomp"), c(1, 1))
+   expect_hsv_cv(X, P, FALSE, "none")
 })
 
 
@@ -330,8 +346,15 @@ test_that("wrong input gives an error", {
    for (j in seq_len(dim(X)[2])) Xc[, j, 3] <- 0.1 * j
    expect_error(pcv3whsv(Xc, c(2, 2), scale = "both"), "mode 3, zero variance in variable\\(s\\) 3\\.")
 
-   # large offset with real variation is accepted
-   expect_silent(pcv3whsv(X + 1e9, c(2, 2), scale = "both", seed = 1))
+   # large values with small but real variation are accepted
+   Xl <- array(1e12 + rep(c(-1, 1), 2000), c(1000, 2, 2))
+   expect_silent(pcv3whsv(Xl, c(1, 1), scale = "both", seed = 1))
+
+   # without centering a variable with all values equal is still an error
+   Xc <- X
+   Xc[, 2, ] <- 0.7
+   expect_error(pcv3whsv(Xc, c(2, 2), center = FALSE, scale = "mode2"),
+      "mode 2, zero variance in variable\\(s\\) 2\\.")
    expect_error(pcv3whsv(X, c(2, 2), scale = "wrong"))
 
    expect_error(pcv3whsv(X, c(2, 2), cv.scope = "local"))

@@ -252,6 +252,24 @@ class TestPCV3WHSV(unittest.TestCase):
         self.assertEqual(info['ncomp'], (4, 5))
         check_hsv_cv(self, X, Xpv, info, True, 'none')
 
+        # noiseless data of rank one: numerical rank decides
+        rng = np.random.default_rng(1)
+        b = rng.uniform(size = 6)
+        c = rng.uniform(size = 5)
+        X = np.einsum('i,j,k->ijk', rng.normal(size = 12), b, c) + 5
+        with self.assertWarnsRegex(UserWarning, 'reduced'):
+            Xpv, info = pcv3whsv(X, (3, 3), seed = 1)
+        self.assertEqual(info['ncomp'], (1, 1))
+        check_hsv_cv(self, X, Xpv, info, True, 'none')
+
+        # second component only in sample 1: local model without it has rank one
+        X = np.einsum('i,j,k->ijk', rng.normal(size = 12), b, c)
+        X[0] += np.outer(rng.uniform(size = 6), rng.uniform(size = 5))
+        with self.assertWarnsRegex(UserWarning, 'reduced'):
+            Xpv, info = pcv3whsv(X, (2, 2), center = False, seed = 1)
+        self.assertEqual(info['ncomp'], (1, 1))
+        check_hsv_cv(self, X, Xpv, info, False, 'none')
+
     def test_alignment(self):
         """ Optimal and greedy matching give expected assignments. """
         M = np.array([[0.90, 0.80, 0.10], [0.85, 0.10, 0.30], [0.20, 0.75, 0.70]])
@@ -390,10 +408,17 @@ class TestPCV3WSeedAndInput(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r'mode 3, zero variance in variable\(s\) 3\.'):
             pcv3whsv(Xc, (2, 2), scale = 'both')
 
-        # large offset with real variation is accepted
+        # large values with small but real variation are accepted
+        Xl = 1e12 + np.where(np.arange(1000) % 2 == 0, -1.0, 1.0)[:, None, None] * np.ones((1, 2, 2))
         with warnings.catch_warnings():
             warnings.simplefilter('error')
-            pcv3whsv(X + 1e9, (2, 2), scale = 'both', seed = 1)
+            pcv3whsv(Xl, (1, 1), scale = 'both', seed = 1)
+
+        # without centering a variable with all values equal is still an error
+        Xc = X.copy()
+        Xc[:, 1, :] = 0.7
+        with self.assertRaisesRegex(ValueError, r'mode 2, zero variance in variable\(s\) 2\.'):
+            pcv3whsv(Xc, (2, 2), center = False, scale = 'mode2')
 
         with self.assertRaises(ValueError):
             pcv3whsv(X, (2, 2), scale = 'wrong')

@@ -405,4 +405,7 @@ test_that("uneven split: number of components is limited by the largest segment.
 
    # several repetitions: only the first one is used
    expect_warning(pcvpca(X, 3, cv = list("rand", 4, 3)), "first one")
+
+   # local calibration set with one row: no component possible
+   expect_error(pcvpca(X, 1, cv = c(rep(1, 19), 2)), "at least 2 rows")
 })

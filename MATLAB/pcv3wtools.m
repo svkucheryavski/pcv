@@ -113,20 +113,22 @@ function p = prep(X, center, scale)
    end
    Xp = X - reshape(p.M, [1, d(2), d(3)]);
 
-   % zero variance check: sd below the rounding noise of centering (10 * I * eps times the
-   % largest absolute value of the variable before centering) counts as zero
-   A = abs(X) * (10 * d(1) * eps);
+   % values constant over the samples become exactly zero, not rounding noise
+   if center
+      Xp = Xp .* ~all(X == X(1, :, :), 1);
+   end
 
    if any(scale == ["mode2", "both"])
-      p.S2 = std(unfold(Xp, 2), 0, 2);
-      checkstd(p.S2, max(unfold(A, 2), [], 2), 2);
+      U = unfold(Xp, 2);
+      checkconst(U, 2);
+      p.S2 = std(U, 0, 2);
       Xp = Xp ./ reshape(p.S2, [1, d(2), 1]);
-      A = A ./ reshape(p.S2, [1, d(2), 1]);
    end
 
    if any(scale == ["mode3", "both"])
-      p.S3 = std(unfold(Xp, 3), 0, 2);
-      checkstd(p.S3, max(unfold(A, 3), [], 2), 3);
+      U = unfold(Xp, 3);
+      checkconst(U, 3);
+      p.S3 = std(U, 0, 2);
       Xp = Xp ./ reshape(p.S3, [1, 1, d(3)]);
    end
 
@@ -134,10 +136,11 @@ function p = prep(X, center, scale)
 end
 
 
-function checkstd(s, tol, mode)
-% raise an error if some variables of a mode have zero variance (sd not above tol)
+function checkconst(U, mode)
+% raise an error if some variables of a mode (rows of the unfolding U) have zero variance,
+% i.e. all their values are equal
 
-   bad = find(~(isfinite(s) & s > tol));
+   bad = find(max(U, [], 2) == min(U, [], 2));
    if ~isempty(bad)
       error('pcv3w:zeroVariance', 'Cannot scale mode %d, zero variance in variable(s) %s.', ...
          mode, strjoin(string(bad(1:min(5, end))'), ', '));

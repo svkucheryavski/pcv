@@ -129,6 +129,24 @@ function testNCompReduced(testCase)
       'pcv3w:ncompReduced');
    verifyEqual(testCase, info.ncomp, [4, 5]);
    checkhsvcv(testCase, X, Xpv, info, true, "none", 1e-8);
+
+   % noiseless data of rank one: numerical rank decides
+   rng(1);
+   b = rand(1, 6);
+   c = rand(1, 1, 5);
+   X = randn(12, 1) .* b .* c + 5;
+   [Xpv, info] = verifyWarning(testCase, @() pcv3whsv(X, [3, 3], [], [], [], [], [], 1), ...
+      'pcv3w:ncompReduced');
+   verifyEqual(testCase, info.ncomp, [1, 1]);
+   checkhsvcv(testCase, X, Xpv, info, true, "none", 1e-8);
+
+   % second component only in sample 1: local model without it has rank one
+   X = randn(12, 1) .* b .* c;
+   X(1, :, :) = X(1, :, :) + reshape(rand(6, 1) * rand(1, 5), 1, 6, 5);
+   [Xpv, info] = verifyWarning(testCase, @() pcv3whsv(X, [2, 2], false, [], [], [], [], 1), ...
+      'pcv3w:ncompReduced');
+   verifyEqual(testCase, info.ncomp, [1, 1]);
+   checkhsvcv(testCase, X, Xpv, info, false, "none", 1e-8);
 end
 
 
@@ -324,8 +342,15 @@ function testWrongInput(testCase)
    verifyErrorText(testCase, @() pcv3whsv(Xc, [2, 2], true, "both"), 'pcv3w:zeroVariance', ...
       "mode 3, zero variance in variable(s) 3.");
 
-   % large offset with real variation is accepted
-   verifyWarningFree(testCase, @() pcv3whsv(X + 1e9, [2, 2], true, "both", [], [], [], 1));
+   % large values with small but real variation are accepted
+   Xl = 1e12 + repmat((-1).^(1:1000)', 1, 2, 2);
+   verifyWarningFree(testCase, @() pcv3whsv(Xl, [1, 1], true, "both", [], [], [], 1));
+
+   % without centering a variable with all values equal is still an error
+   Xc = X;
+   Xc(:, 2, :) = 0.7;
+   verifyErrorText(testCase, @() pcv3whsv(Xc, [2, 2], false, "mode2"), 'pcv3w:zeroVariance', ...
+      "mode 2, zero variance in variable(s) 2.");
 
    verifyError(testCase, @() pcv3whsv(X, [2, 2], true, "wrong"), 'pcv3w:wrongScale');
    verifyError(testCase, @() pcv3whsv(X, [2, 2], true, 1), 'pcv3w:wrongScale');

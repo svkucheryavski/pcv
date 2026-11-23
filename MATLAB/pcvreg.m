@@ -37,6 +37,9 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
    % adjust number of components if necessary
    % the largest segment gives the smallest local calibration set
    maxNComp = min([nRows - max(accumarray(ind(:), 1)) - 1, nPred]);
+   if maxNComp < 1
+      error('pcvreg: each local calibration set must have at least 2 rows, check the cross-validation split.');
+   end
    if nComp > maxNComp
       nComp = maxNComp;
    end

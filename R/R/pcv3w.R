@@ -359,33 +359,33 @@ prep3w <- function(X3w, center = TRUE, scale = "none") {
    S2 <- rep(1, d[2])
    S3 <- rep(1, d[3])
 
-   # zero variance check: sd below the rounding noise of centering (10 * I * eps times the
-   # largest absolute value of the variable before centering) counts as zero
-   A <- abs(X3w)
-   tol <- 10 * d[1] * .Machine$double.eps
+   # a variable has zero variance if all its values are equal
+   isconst <- function(x) max(x) == min(x)
 
    X3wp <- X3w
    if (center) {
       M <- apply(X3wp, c(2, 3), mean)
       X3wp <- sweep(X3wp, c(2, 3), M, "-")
+
+      # values constant over the samples become exactly zero, not rounding noise
+      X3wp <- sweep(X3wp, c(2, 3), !apply(X3w, c(2, 3), isconst), "*")
    }
 
    scale <- normalizescale3w(scale)
 
    if (scale %in% c("mode2", "both")) {
       S2 <- apply(X3wp, 2, sd)
-      bad <- which(!is.finite(S2) | !(S2 > tol * apply(A, 2, max)))
+      bad <- which(apply(X3wp, 2, isconst))
       if (length(bad) > 0) {
          stop("prep3w: cannot scale mode 2, zero variance in variable(s) ",
             paste(bad[seq_len(min(5, length(bad)))], collapse = ", "), ".")
       }
       X3wp <- sweep(X3wp, 2, S2, "/")
-      A <- sweep(A, 2, S2, "/")
    }
 
    if (scale %in% c("mode3", "both")) {
       S3 <- apply(X3wp, 3, sd)
-      bad <- which(!is.finite(S3) | !(S3 > tol * apply(A, 3, max)))
+      bad <- which(apply(X3wp, 3, isconst))
       if (length(bad) > 0) {
          stop("prep3w: cannot scale mode 3, zero variance in variable(s) ",
             paste(bad[seq_len(min(5, length(bad)))], collapse = ", "), ".")

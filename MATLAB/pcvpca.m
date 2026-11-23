@@ -69,6 +69,9 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
 
    % the largest segment gives the smallest local calibration set
    maxNComp = min([nRows - max(accumarray(ind(:), 1)) - 1, nCols, 30]);
+   if maxNComp < 1
+      error('pcvpca: each local calibration set must have at least 2 rows, check the cross-validation split.');
+   end
 
    if nargin < 2 || nComp > maxNComp
       nComp = maxNComp;

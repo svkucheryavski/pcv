@@ -290,6 +290,8 @@ def pcvreg(X: np.ndarray,
 
     # get cross-validation settings
     (cvind, cvncomp, cvnseg) = get_cvsettings(cv, nrows, ncomp, Y[..., :1])
+    if cvncomp < 1:
+        raise ValueError('Each local calibration set must have at least 2 rows, check the cross-validation split.')
 
     # compute global mean and standard deviation and autoscale the whole data
     mX = X.mean(axis = 0) if center else np.zeros(ncols)
@@ -420,6 +422,8 @@ def pcvpca(X: np.ndarray,
 
     # get cross-validation settings
     (cvind, cvncomp, cvnseg) = get_cvsettings(cv, nrows, ncomp)
+    if cvncomp < 1:
+        raise ValueError('Each local calibration set must have at least 2 rows, check the cross-validation split.')
 
     # compute global mean and standard deviation and autoscale the whole data
     mX = X.mean(axis = 0) if center else np.zeros(ncols)

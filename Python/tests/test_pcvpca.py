@@ -305,6 +305,10 @@ class TestPCVPCAEdgeCases(unittest.TestCase):
             qcv[cv == k] = ((Xk - Xk @ Pk @ Pk.T) ** 2).sum(axis = 1)
         np.testing.assert_allclose(qpv, qcv)
 
+        # local calibration set with one row: no component possible
+        with self.assertRaisesRegex(ValueError, 'at least 2 rows'):
+            pcvpca(X, 1, cv = np.array([1] * 19 + [2]))
+
     def test_invalid_cvscope(self):
         """ Invalid cvscope should raise ValueError. """
         X = np.array([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,

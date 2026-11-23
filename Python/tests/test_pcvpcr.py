@@ -227,6 +227,10 @@ class TestPCVPCREdgeCases(unittest.TestCase):
         np.testing.assert_array_equal(Xpv9, Xpv3)
         self.assertEqual(D9.shape[1], 3)
 
+        # local calibration set with one row: no component possible
+        with self.assertRaisesRegex(ValueError, 'at least 2 rows'):
+            pcvpcr(X, Y, 1, cv = np.array([1] * 19 + [2]))
+
     def test_invalid_cvscope(self):
         """ Invalid cvscope should raise ValueError. """
         self.assertRaises(ValueError, pcvpcr, self.X, self.Y, 3, cvscope='wrong')

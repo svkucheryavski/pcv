@@ -64,6 +64,9 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
 
    # correct maximum number of components (the largest segment gives the smallest local set)
    max.ncomp <- min(nrow(X) - max(tabulate(ind)) - 1, nPred)
+   if (max.ncomp < 1) {
+      stop("pcvreg: each local calibration set must have at least 2 rows, check the cross-validation split.")
+   }
    if (ncomp > max.ncomp) {
       ncomp <- max.ncomp
    }

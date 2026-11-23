@@ -416,31 +416,33 @@ def _prep3w(X: np.ndarray, center: bool, scale: str) -> dict:
     S3 = np.ones(n3)
     Xp = X - M
 
-    # zero variance check: sd below the rounding noise of centering (10 * I * eps times the
-    # largest absolute value of the variable before centering) counts as zero
-    A = np.abs(X) * (10 * X.shape[0] * _EPS)
+    # values constant over the samples become exactly zero, not rounding noise
+    if center:
+        Xp[:, np.all(X == X[0], axis = 0)] = 0.0
 
     if scale in ('mode2', 'both'):
-        S2 = Xp.transpose(1, 0, 2).reshape(n2, -1).std(axis = 1, ddof = 1)
-        _checkstd3w(S2, A.max(axis = (0, 2)), 2)
+        U = Xp.transpose(1, 0, 2).reshape(n2, -1)
+        _checkconst3w(U, 2)
+        S2 = U.std(axis = 1, ddof = 1)
         Xp = Xp / S2[None, :, None]
-        A = A / S2[None, :, None]
 
     if scale in ('mode3', 'both'):
-        S3 = Xp.transpose(2, 0, 1).reshape(n3, -1).std(axis = 1, ddof = 1)
-        _checkstd3w(S3, A.max(axis = (0, 1)), 3)
+        U = Xp.transpose(2, 0, 1).reshape(n3, -1)
+        _checkconst3w(U, 3)
+        S3 = U.std(axis = 1, ddof = 1)
         Xp = Xp / S3[None, None, :]
 
     return {'Xp': Xp, 'M': M, 'S2': S2, 'S3': S3, 'center': center, 'scale': scale}
 
 
 
-def _checkstd3w(s: np.ndarray, tol: np.ndarray, mode: int):
+def _checkconst3w(U: np.ndarray, mode: int):
     """
-    Raise an error if some variables of a mode have zero variance (sd not above tol).
+    Raise an error if some variables of a mode (rows of the unfolding U) have zero
+    variance, i.e. all their values are equal.
     """
 
-    bad = np.flatnonzero(~(np.isfinite(s) & (s > tol)))
+    bad = np.flatnonzero(U.max(axis = 1) == U.min(axis = 1))
     if bad.size > 0:
         raise ValueError(f'cannot scale mode {mode}, zero variance in variable(s) ' +
             ', '.join(str(b + 1) for b in bad[:5]) + '.')

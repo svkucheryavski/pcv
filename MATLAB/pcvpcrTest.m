@@ -43,6 +43,9 @@ function testEdgeCases(testCase)
    verifyTrue(testCase, all(isfinite(Xpv9(:))));
    verifyEqual(testCase, Xpv9, Xpv3);
    verifyEqual(testCase, size(D9, 2), 3);
+
+   % local calibration set with one row: no component possible
+   verifyError(testCase, @() pcvpcr(Xu, Yu, 1, true, false, [ones(19, 1); 2]), ?MException);
 end
 
 
