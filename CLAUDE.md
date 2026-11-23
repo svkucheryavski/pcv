@@ -1,0 +1,103 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Procrustes Cross-Validation (PCV) — a validation method for chemometric models (PCA/SIMCA/PCR/PLS) that generates synthetic pseudo-validation datasets (PV-sets). Multi-language implementations: **R**, **Python**, **JavaScript**, and **MATLAB**, each independent but following the same algorithmic structure.
+
+Package names differ by language: R=`pcv`, Python=`prcv` (on PyPI), JavaScript=`pcv` (on npm).
+
+Primary citation: Kucheryavskiy et al. (2023), Analytica Chimica Acta, 1255. DOI: 10.1016/j.aca.2023.341096
+
+## Build and Test Commands
+
+### R
+```bash
+# Run all tests (from repo root)
+cd R && Rscript -e 'testthat::test_dir("tests/testthat")'
+
+# Check package
+R CMD check R/
+
+# Build package
+R CMD build R/
+```
+
+### Python
+```bash
+# Run all tests (from Python/ directory)
+cd Python && python -m pytest tests/
+
+# Run a single test file
+cd Python && python -m pytest tests/test_pcvpca.py
+
+# Build package (uses hatchling)
+cd Python && python -m build
+```
+Dependencies: `numpy`, `scipy`. Build system: `hatchling`.
+
+### JavaScript
+```bash
+# Run tests (from Javascript/ directory)
+cd Javascript && npm test
+```
+Test framework: Mocha + Chai. Depends on `mdatools` library.
+
+## Architecture
+
+### Algorithm Structure
+
+All language implementations follow the same pattern:
+
+1. **`pcvpca(X, ncomp, ...)`** — PCV for PCA models (no response variable Y)
+2. **`pcvpcr(X, Y, ncomp, ...)`** — PCV for Principal Component Regression
+3. **`pcvpls(X, Y, ncomp, ...)`** — PCV for Partial Least Squares regression
+4. **`pcvreg(X, Y, ncomp, funlist, ...)`** — Generic regression wrapper used by pcvpcr/pcvpls
+
+The `pcvreg` function accepts a `funlist` dictionary of callbacks (`get_globalmodel`, `get_localmodel`, `get_xpvhat`, `get_qk`) that encapsulate method-specific operations. This makes it extensible to new regression methods without changing the core PCV loop.
+
+### CV Scope Parameter
+
+- **`"global"` (default):** All local models use globally computed mean/std for centering/scaling. Gives strict Procrustes property.
+- **`"local"`:** Each local set is autoscaled independently. More realistic variance but Procrustes rules hold only approximately. Experimental — use with caution.
+
+### Cross-validation Split Types
+
+- `"loo"` — Leave-one-out
+- `"ven"` — Venetian blinds (systematic)
+- `"rand"` — Random splits
+
+### Reference-Based Testing
+
+Tests compare outputs against pre-computed reference values stored in `.tests/` at the repo root:
+- `.tests/data/corn.csv` — Test dataset
+- `.tests/pcvpca/`, `.tests/pcvpcr/`, `.tests/pcvpls/` — Reference CSV files generated from R
+
+Reference files are named: `{metric}-{ncomp}-{SCALE}-{cv_type}{nseg}.csv`
+
+Tests iterate over combinations of: ncomp=[1,10,20,30], cv=[loo, ven4, ven10], scale=[TRUE,FALSE].
+
+**Important:** Python tests must be run from the `Python/` directory because they use relative paths (`../.tests/`) to find reference data.
+
+### Key Implementation Files
+
+| Language | Core algorithm | CV splitting | Helpers |
+|----------|---------------|-------------|---------|
+| R | `R/R/pcvpca.R`, `pcvpcr.R`, `pcvpls.R` | `R/R/pcvcrossval.R` | `R/R/pcvreg.R`, `R/R/getxpvorth.R` |
+| Python | `Python/src/prcv/methods.py` | `Python/src/prcv/misc.py` | (in methods.py) |
+| JS | `Javascript/src/index.js` | (in index.js) | (in index.js) |
+| MATLAB | `MATLAB/pcvpca.m`, `pcvpcr.m`, `pcvpls.m` | `MATLAB/crossval.m` | `MATLAB/pcvreg.m`, `MATLAB/simpls.m` |
+
+### R-Specific Notes
+
+- Uses roxygen2 for documentation generation (`man/` is auto-generated from source comments)
+- R functions return D matrix as an attribute (`attr(result, "D")`) rather than as a tuple
+- R NAMESPACE is auto-generated — do not edit manually
+
+### Python-Specific Notes
+
+- Package source is in `Python/src/prcv/`
+- All core algorithms are in `methods.py` (~586 lines); CV split logic in `misc.py`
+- Uses `scipy.linalg.svd` for decompositions; implements SIMPLS for PLS internally
+- Numerical stability: epsilon = `1e-12`, constant column detection via `np.allclose`
