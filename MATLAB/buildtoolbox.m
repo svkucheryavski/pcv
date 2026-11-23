@@ -26,7 +26,7 @@ opts.ToolboxImageFile = fullfile(root, "..", "logo.png");
 
 opts.SupportedPlatforms.Win64 = true;
 opts.SupportedPlatforms.Glnxa64 = true;
-opts.SupportedPlatforms.Maci64 = true;
+opts.SupportedPlatforms.Mac = true;   % Intel and Apple silicon
 opts.SupportedPlatforms.MatlabOnline = true;
 
 opts.OutputFile = fullfile(root, "Procrustes cross-validation.mltbx");
