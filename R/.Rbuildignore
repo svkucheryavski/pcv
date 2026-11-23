@@ -21,4 +21,4 @@ tests/testthat/*
 
 # local tests and linting
 demo.R
-
+demo3w.R

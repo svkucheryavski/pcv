@@ -65,3 +65,35 @@ File `demo.R`, which you can download from this repository contains a demo code 
 The package code will be improved and extended gradually. If you found a bug please report using [issues](https://github.com/svkucheryavski/pcv/issues) or send an email.
 
 
+## Three-way data
+
+From version *1.3.0* the package also implements PCV for three-way data, for example fluorescence excitation-emission matrices (EEM), where every sample is a matrix (e.g. excitation wavelengths x emission wavelengths). The calibration set is a three-way array with samples in the first mode. There are three methods:
+
+* `pcv3wfu()` unfolds every sample to a vector and generates PV-set with PCA based PCV (full unfolding, FU).
+
+* `pcv3wbu()` splits the array into blocks along mode 2 or mode 3 and generates PV-set for each block with PCA based PCV, using the same split of the samples (block unfolding, BU).
+
+* `pcv3whsv()` is based on HO-SVD (Tucker2) model with components in modes 2 and 3 (HSV). Projected onto the global HO-SVD model, the PV-set gives the same scores and orthogonal distances as cross-validation of this model.
+
+All three functions return PV-set as a three-way array of the same size as the calibration set, in the original units:
+
+```r
+# full unfolding
+Xpv <- pcv3wfu(X, ncomp = 20, cv = list("ven", 4))
+
+# block unfolding along mode 2
+Xpv <- pcv3wbu(X, mode = 2, ncomp = 10, cv = list("ven", 4))
+
+# HO-SVD based method with 6 x 6 components
+Xpv <- pcv3whsv(X, ncomp = c(6, 6), cv = list("ven", 4))
+```
+
+Parameter `cv` works the same way as for the two-way methods. All three functions also have parameter `seed`, which makes random splits and random parts of the PV-set reproducible.
+
+Two practical recommendations:
+
+* HSV PV-set is a good choice in general. For validation of PARAFAC and Tucker3 models it can be replaced with FU PV-set.
+
+* Generate PV-set with more components than the largest model you are going to validate. A PV-set carries the sampling variation only within the subspace it was generated in.
+
+File `demo3w.R` contains a demo code with simulated EEM data, which shows how to generate the PV-sets and use them for validation of a three-way model. The methods are described in: S. Kucheryavskiy, *Procrustes cross-validation for three-way data* (submitted).
