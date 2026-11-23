@@ -2,11 +2,11 @@
 % Please edit documentation in R/pcv3w.R
 \name{splitcv3w}
 \alias{splitcv3w}
-\title{Segment index of each sample (first repetition only)}
+\title{Segment number of each sample (first repetition only), checked to be 1, 2, ..., nseg}
 \usage{
 splitcv3w(cv, nobj, fname)
 }
 \description{
-Segment index of each sample (first repetition only)
+Segment number of each sample (first repetition only), checked to be 1, 2, ..., nseg
 }
 \keyword{internal}

@@ -32,6 +32,18 @@ ref.factors <- function(X, mode, R) {
 
 ref.slab <- function(X, i) matrix(X[i, , ], dim(X)[2], dim(X)[3])
 
+# all permutations of 1..n
+ref.perms <- function(n) if (n == 1) list(1L) else
+   unlist(lapply(ref.perms(n - 1), function(p) lapply(0:(n - 1), function(k) append(p, n, k))), FALSE)
+
+# TRUE if assignment p gives the maximal sum of M[i, p[i]] (TRUE without checking above 6 x 6)
+ref.isoptimal <- function(M, p) {
+   n <- nrow(M)
+   if (n > 6) return(TRUE)
+   best <- max(sapply(ref.perms(n), function(pp) sum(M[cbind(seq_len(n), pp)])))
+   abs(sum(M[cbind(seq_len(n), p)]) - best) < 1e-12
+}
+
 # check that projections of HSV PV-set on the global model equal cross-validation results
 expect_hsv_cv <- function(X, P, center, scale, tol = 1e-8) {
    R <- attr(P, "ncomp")
@@ -48,9 +60,17 @@ expect_hsv_cv <- function(X, P, center, scale, tol = 1e-8) {
       L2 <- ref.factors(p$Xp[cvind != k, , , drop = FALSE], 2, R[1])
       L3 <- ref.factors(p$Xp[cvind != k, , , drop = FALSE], 3, R[2])
 
+      # reported matching must reach the maximal sum of absolute cosines (checked up to 6 x 6)
+      p2 <- al$local.col[al$segment == k & al$mode == 2]
+      p3 <- al$local.col[al$segment == k & al$mode == 3]
+      if (attr(P, "align") == "optimal") {
+         expect_true(ref.isoptimal(abs(crossprod(U2, L2)), p2))
+         expect_true(ref.isoptimal(abs(crossprod(U3, L3)), p3))
+      }
+
       # local factors in the order reported by the method, signs matched to the global ones
-      U2k <- L2[, al$local.col[al$segment == k & al$mode == 2], drop = FALSE]
-      U3k <- L3[, al$local.col[al$segment == k & al$mode == 3], drop = FALSE]
+      U2k <- L2[, p2, drop = FALSE]
+      U3k <- L3[, p3, drop = FALSE]
       U2k <- U2k %*% diag(sign(colSums(U2 * U2k)), R[1], R[1])
       U3k <- U3k %*% diag(sign(colSums(U3 * U3k)), R[2], R[2])
 
@@ -117,8 +137,36 @@ test_that("HSV PV-set is valid for smaller numbers of components", {
 
    # generation ranks are always valid, the warning comes only when some smaller are not
    expect_true(5 %in% vs$r2 && 5 %in% vs$r3)
-   expect_equal(warned, length(vs$r2) < 5 || length(vs$r3) < 5)
+   expect_true(length(vs$r2) < 5)
+   expect_true(warned)
    expect_hsv_cv(X, P, TRUE, "none")
+
+   # omitted numbers of components really do not reproduce cross-validation
+   cvind <- attr(P, "cvind")
+   Xc <- sweep(X, c(2, 3), apply(X, c(2, 3), mean), "-")
+   Pc <- sweep(P, c(2, 3), apply(X, c(2, 3), mean), "-")
+   U2 <- ref.factors(Xc, 2, 5)
+   U3 <- ref.factors(Xc, 3, 5)
+   for (mode in 2:3) {
+      for (r in setdiff(1:5, vs[[mode - 1]])) {
+         r2 <- if (mode == 2) r else 5
+         r3 <- if (mode == 3) r else 5
+         maxdiff <- 0
+         for (k in unique(cvind)) {
+            l2 <- ref.factors(Xc[cvind != k, , , drop = FALSE], 2, r2)
+            l3 <- ref.factors(Xc[cvind != k, , , drop = FALSE], 3, r3)
+            for (i in which(cvind == k)) {
+               Xi <- ref.slab(Xc, i)
+               Pi <- ref.slab(Pc, i)
+               qcv <- sum((Xi - l2 %*% crossprod(l2, Xi) %*% l3 %*% t(l3))^2)
+               qpv <- sum(Pi^2) - sum((crossprod(U2[, seq_len(r2), drop = FALSE], Pi) %*%
+                  U3[, seq_len(r3), drop = FALSE])^2)
+               maxdiff <- max(maxdiff, abs(qpv - qcv) / qcv)
+            }
+         }
+         expect_gt(maxdiff, 1e-6)
+      }
+   }
 })
 
 test_that("optimal and greedy matching give expected assignments", {
@@ -188,6 +236,11 @@ test_that("FU PV-set is the same as pcvpca() on unfolded data", {
       set.seed(5)
       Xpv <- pcvpca(matrix(X, d[1]), ncomp = 6, cv = list("ven", 4), scale = scale)
       expect_equal(P, array(Xpv, d))
+
+      # column (j, k) of the unfolded data is column j + J * (k - 1)
+      for (j in c(1, d[2])) for (k in c(1, 2, d[3])) {
+         expect_equal(P[, j, k], Xpv[, j + d[2] * (k - 1)])
+      }
    }
 })
 
@@ -248,6 +301,49 @@ test_that("wrong input gives an error", {
    expect_error(pcv3whsv(X, c(2, 2), press = TRUE))
    expect_error(pcv3wbu(X, mode = 1), "mode")
    expect_error(pcv3wfu(matrix(1:20, 4)), "three-way")
+})
+
+
+test_that("wrong segment numbers in 'cv' give an error", {
+   X <- simdata3w()
+   for (cv in list(rep(0:2, 8), rep(c(1, 3), 12), rep(1, 24), rep(c(1.5, 2), 12))) {
+      expect_error(pcv3whsv(X, c(2, 2), cv = cv), "segment numbers")
+      expect_error(pcv3wbu(X, 2, 3, cv = cv), "segment numbers")
+      expect_error(pcv3wfu(X, 3, cv = cv), "segment numbers")
+   }
+   expect_warning(pcv3wfu(X, 3, cv = list("rand", 4, 3), seed = 1), "first one")
+})
+
+test_that("orthogonal part uses the fixed direction when needed", {
+   set.seed(5)
+   U2 <- qr.Q(qr(matrix(rnorm(6 * 2), 6)))
+   U3 <- qr.Q(qr(matrix(rnorm(5 * 2), 5)))
+
+   # direction does not depend on signs of the factors
+   cdir <- complementdir3w(U2, U3)
+   expect_equal(complementdir3w(-U2, -U3), cdir)
+   expect_equal(sum(cdir^2), 1)
+   expect_equal(sum(proj3w(cdir, U2, U3)^2), 0)
+
+   # residual lying inside the model space: the fixed direction is used with the right norm
+   E <- U2 %*% matrix(c(1, 2, 3, 4), 2) %*% t(U3)
+   for (orth in c("canonical", "random")) {
+      Xk <- if (orth == "canonical") list(E) else list(E, 2 * E)
+      Eres <- if (orth == "canonical") list(E) else list(E, E)
+      Eo <- getxpvorth3w(Xk, Eres, U2, U3, cdir, orth)
+      expect_equal(Eo[[1]], cdir * sqrt(sum(E^2)))
+   }
+
+   # full model space in both modes: no direction
+   expect_null(complementdir3w(diag(3), diag(2)))
+})
+
+test_that("names of dimensions are kept", {
+   X <- simdata3w()
+   dimnames(X) <- list(paste0("s", 1:24), paste0("ex", 1:10), paste0("em", 1:8))
+   expect_equal(dimnames(pcv3whsv(X, c(2, 2), seed = 1)), dimnames(X))
+   expect_equal(dimnames(pcv3wfu(X, 3, seed = 1)), dimnames(X))
+   expect_equal(dimnames(pcv3wbu(X, 2, 3, seed = 1)), dimnames(X))
 })
 
 

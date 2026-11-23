@@ -1,9 +1,9 @@
 Package: pcv
-Version: 1.2.0
+Version: 1.3.0
 Date: 2026-08-14
 Title: Procrustes Cross-Validation
 Authors@R: c(person("Sergey", "Kucheryavskiy", role = c("aut", "cre"), email="svkucheryavski@gmail.com", comment = c(ORCID = "0000-0002-3145-7244")))
-Description: Implements Procrustes cross-validation method for Principal Component Analysis, Principal Component Regression and Partial Least Squares regression models. S. Kucheryavskiy (2023) <doi:10.1016/j.aca.2023.341096>.
+Description: Implements Procrustes cross-validation method for Principal Component Analysis, Principal Component Regression and Partial Least Squares regression models, as well as for three-way data (full and block unfolding, and HO-SVD based method). S. Kucheryavskiy (2023) <doi:10.1016/j.aca.2023.341096>.
 Encoding: UTF-8
 License: MIT + file LICENSE
 Imports: graphics, grDevices, stats

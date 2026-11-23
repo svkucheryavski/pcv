@@ -26,10 +26,12 @@ all values must be finite.}
 \item{center}{logical, to subtract the mean slab or not.}
 
 \item{scale}{scaling within modes: \code{"none"} (or \code{FALSE}), \code{"mode2"}, \code{"mode3"} or
-\code{"both"} (or \code{TRUE}), see details.}
+\code{"both"} (or \code{TRUE}), see details. A variable with zero variance cannot be scaled
+and gives an error.}
 
-\item{orth}{how to construct the orthogonal part: \code{"random"} (random mix of the segment's slabs, as in
-the two-way method) or \code{"canonical"} (each slab's own local residual, no randomness).}
+\item{orth}{how to construct the orthogonal part: \code{"random"} (random mix of the segment's slabs,
+similar to the two-way method) or \code{"canonical"} (each slab's own local residual, no
+randomness).}
 
 \item{align}{how to match local components to the global ones: \code{"optimal"} (maximal sum of absolute
 cosines) or \code{"greedy"} (global components in order of variance choose first).}

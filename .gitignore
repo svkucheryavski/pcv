@@ -14,3 +14,6 @@ package-lock.json
 .pytest_cache
 .vscode
 
+
+# private Juices data must never be committed
+*[Jj]uice*.[Cc][Ss][Vv]

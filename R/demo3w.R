@@ -10,7 +10,6 @@
 #####################################################################################
 
 rm(list = ls())
-source("./R/pcv3w.R")
 library(pcv)
 
 
@@ -161,10 +160,12 @@ plotdist(hosvd(X, 6, 6), X, Xpv.hsv, "HO-SVD model, 6 x 6 components")
 # 3. PV-set reproduces cross-validation                                             #
 #####################################################################################
 
-## Projected onto the global model, HSV PV-set gives the same distances as
-## cross-validation of the HO-SVD model. Below we run the cross-validation directly
-## and compare the orthogonal distances for the 2 x 2 model (the score distances agree
-## in the same way, but need the local components matched to the global ones).
+## Projected onto the global model, HSV PV-set gives the same scores and orthogonal
+## distances as cross-validation of the HO-SVD model. Score distances are also the same
+## if cross-validation computes them with the score metric of the global model (after
+## matching local components to the global ones), but not with the metric of each local
+## model. Below we run the cross-validation directly and compare the orthogonal
+## distances for the 2 x 2 model.
 
 cvind <- attr(Xpv.hsv, "cvind")
 Xc <- sweep(X, c(2, 3), apply(X, c(2, 3), mean), "-")   # global centering, as in pcv3whsv()

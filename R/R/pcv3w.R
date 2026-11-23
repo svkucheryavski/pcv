@@ -38,10 +38,14 @@ pcv3wfu <- function(X3w, ncomp = min(dim(X3w)[1] - 1, prod(dim(X3w)[2:3]), 30), 
 
    # unfold to I x (J*K), mode 2 runs fastest, generate PV-set and fold back
    X <- matrix(X3w, d[1], d[2] * d[3])
-   Xpv <- withseed3w(seed, pcvpca(X, ncomp = ncomp, cv = cv, center = center, scale = scale,
-      cv.scope = "global"))
+   withseed3w(seed, {
+      cvind <- splitcv3w(cv, d[1], "pcv3wfu")
+      Xpv <- pcvpca(X, ncomp = ncomp, cv = cvind, center = center, scale = scale, cv.scope = "global")
+   })
 
-   return(array(Xpv, d))
+   Xpv3w <- array(Xpv, d)
+   dimnames(Xpv3w) <- dimnames(X3w)
+   return(Xpv3w)
 }
 
 
@@ -94,6 +98,7 @@ pcv3wbu <- function(X3w, mode = 2, ncomp = min(dim(X3w)[1] - 1, dim(X3w)[if (mod
       }
    })
 
+   dimnames(Xpv3w) <- dimnames(X3w)
    attr(Xpv3w, "cvind") <- cvind
    return(Xpv3w)
 }
@@ -112,10 +117,12 @@ pcv3wbu <- function(X3w, mode = 2, ncomp = min(dim(X3w)[1] - 1, dim(X3w)[if (mod
 #' logical, to subtract the mean slab or not.
 #' @param scale
 #' scaling within modes: \code{"none"} (or \code{FALSE}), \code{"mode2"}, \code{"mode3"} or
-#' \code{"both"} (or \code{TRUE}), see details.
+#' \code{"both"} (or \code{TRUE}), see details. A variable with zero variance cannot be scaled
+#' and gives an error.
 #' @param orth
-#' how to construct the orthogonal part: \code{"random"} (random mix of the segment's slabs, as in
-#' the two-way method) or \code{"canonical"} (each slab's own local residual, no randomness).
+#' how to construct the orthogonal part: \code{"random"} (random mix of the segment's slabs,
+#' similar to the two-way method) or \code{"canonical"} (each slab's own local residual, no
+#' randomness).
 #' @param align
 #' how to match local components to the global ones: \code{"optimal"} (maximal sum of absolute
 #' cosines) or \code{"greedy"} (global components in order of variance choose first).
@@ -240,6 +247,7 @@ pcv3whsv.run <- function(X3w, ncomp, cvind, center, scale, orth, align) {
    }
 
    X3wpv <- prep3w.remove(X3wpv, pg)
+   dimnames(X3wpv) <- dimnames(X3w)
 
    # sub-rank r is valid if in every segment components 1..r are matched within 1..r
    adiag <- do.call(rbind, adiag)
@@ -299,14 +307,22 @@ normalizescale3w <- function(scale) {
 }
 
 
-#' Segment index of each sample (first repetition only)
+#' Segment number of each sample (first repetition only), checked to be 1, 2, ..., nseg
 #' @keywords internal
 splitcv3w <- function(cv, nobj, fname) {
    cvfull <- pcvcrossval(cv, nobj)
    if (ncol(cvfull) > 1) {
       warning(fname, ": 'cv' specifies several repetitions, only the first one is used.")
    }
-   return(cvfull[, 1])
+
+   cvind <- cvfull[, 1]
+   nseg <- if (is.numeric(cvind) && !anyNA(cvind)) max(cvind) else NA
+   if (is.na(nseg) || any(cvind != round(cvind)) || nseg < 2 || any(cvind < 1) ||
+         !all(seq_len(nseg) %in% cvind)) {
+      stop(fname, ": segment numbers in 'cv' must be 1, 2, ..., n (n >= 2), each used at least once.")
+   }
+
+   return(as.integer(cvind))
 }
 
 
@@ -457,8 +473,10 @@ complvec3w <- function(U) {
 #' Fixed unit direction outside the model space (NULL if there is none)
 #' @keywords internal
 complementdir3w <- function(U2, U3) {
-   if (ncol(U2) < nrow(U2)) return(complvec3w(U2) %*% t(U3[, 1, drop = FALSE]))
-   if (ncol(U3) < nrow(U3)) return(U2[, 1, drop = FALSE] %*% t(complvec3w(U3)))
+   # first factor with sign fixed, so the direction does not depend on the SVD sign convention
+   first <- function(U) U[, 1, drop = FALSE] * sign(U[which.max(abs(U[, 1])), 1])
+   if (ncol(U2) < nrow(U2)) return(complvec3w(U2) %*% t(first(U3)))
+   if (ncol(U3) < nrow(U3)) return(first(U2) %*% t(complvec3w(U3)))
    return(NULL)
 }
 
