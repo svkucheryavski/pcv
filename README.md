@@ -13,10 +13,10 @@ Our recent research published in pre-print ([arXiv:2312.04911v1](https://arxiv.o
 
 ## Release notes
 
-Last minor update [1.2.x) was released on 3rd of December, 2025 for R and Python languages. It contains small improvements related to stability and preventing situations when NaN values can
+Last minor update (1.2.x) was released on 3rd of December, 2025 for R and Python languages and on 23rd of November, 2026 for MATLAB (together with a bug-fix release 1.2.2 for Python). It contains small improvements related to stability and preventing situations when NaN values can
 be generated (e.g. during scaling or normalization).
 
-By default a *global* scope is used, so all local models have the same center as the global model in the original variable space. In this case all local calibration sets are autoscaled using globally computed mean and standard deviation values. This implementation is also described in [the paper](https://doi.org/10.1016/j.aca.2023.341096).
+Version 1.1.0 introduced an experimental parameter, *CV scope*, which can be `"global"` or `"local"`. By default a *global* scope is used, so all local models have the same center as the global model in the original variable space. In this case all local calibration sets are autoscaled using globally computed mean and standard deviation values. This implementation is also described in [the paper](https://doi.org/10.1016/j.aca.2023.341096).
 
 If you use a local CV-scope, then each local calibration and validation sets will be autoscaled independently by using mean values and standard deviations computed for the local calibration set. This will slightly increase the sampling error and, in theory, should make it more realistic. But the Procrustean rules for PV-sets computed using the local CV scope will only hold approximately true (there is a strong agreement in case of the global scope). This feature requires additional investigation so use it with caution.
 
