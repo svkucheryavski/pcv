@@ -376,3 +376,33 @@ test_that("edge cases: constant column, small data, invalid cv.scope.", {
    # invalid cv.scope should error
    expect_error(pcvpca(X, ncomp = 5, cv.scope = "wrong"), "should be one of")
 })
+
+test_that("uneven split: number of components is limited by the largest segment.", {
+   set.seed(1)
+   X <- matrix(rnorm(20 * 10), 20, 10)
+   cv <- c(rep(1, 16), rep(2, 4))
+
+   # the largest segment leaves 4 rows, so at most 3 components are possible
+   set.seed(2)
+   Xpv9 <- pcvpca(X, 9, cv = cv)
+   set.seed(2)
+   Xpv3 <- pcvpca(X, 3, cv = cv)
+   expect_true(all(is.finite(Xpv9)))
+   expect_equal(Xpv9, Xpv3)
+
+   # orthogonal distances of the PV-set on the global model equal cross-validation
+   Xc <- scale(X, center = TRUE, scale = FALSE)
+   P <- svd(Xc, nu = 0, nv = 3)$v
+   Xpvc <- sweep(Xpv3, 2, attr(Xc, "scaled:center"))
+   qpv <- rowSums((Xpvc - Xpvc %*% P %*% t(P))^2)
+   qcv <- numeric(20)
+   for (k in 1:2) {
+      Pk <- svd(Xc[cv != k, ], nu = 0, nv = 3)$v
+      Xk <- Xc[cv == k, , drop = FALSE]
+      qcv[cv == k] <- rowSums((Xk - Xk %*% Pk %*% t(Pk))^2)
+   }
+   expect_equal(qpv, qcv)
+
+   # several repetitions: only the first one is used
+   expect_warning(pcvpca(X, 3, cv = list("rand", 4, 3)), "first one")
+})

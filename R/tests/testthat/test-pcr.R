@@ -382,3 +382,22 @@ test_that("edge cases: constant column, small data, invalid cv.scope.", {
    # invalid cv.scope should error
    expect_error(pcvpcr(X, Y, ncomp = 5, cv.scope = "wrong"), "should be one of")
 })
+
+test_that("uneven split: number of components is limited by the largest segment.", {
+   set.seed(1)
+   X <- matrix(rnorm(20 * 10), 20, 10)
+   Y <- matrix(rnorm(20), 20, 1)
+   cv <- c(rep(1, 16), rep(2, 4))
+
+   # the largest segment leaves 4 rows, so at most 3 components are possible
+   set.seed(2)
+   Xpv9 <- pcvpcr(X, Y, 9, cv = cv)
+   set.seed(2)
+   Xpv3 <- pcvpcr(X, Y, 3, cv = cv)
+   expect_true(all(is.finite(Xpv9)))
+   expect_equal(Xpv9, Xpv3)
+   expect_equal(ncol(attr(Xpv9, "D")), 3)
+
+   # several repetitions: only the first one is used
+   expect_warning(pcvpcr(X, Y, 3, cv = list("rand", 4, 3)), "first one")
+})

@@ -211,6 +211,22 @@ class TestPCVPCREdgeCases(unittest.TestCase):
         self.assertEqual(Xpv.shape[0], 6)
         self.assertFalse(np.any(np.isnan(Xpv)))
 
+    def test_uneven_split(self):
+        """ Uneven split: number of components is limited by the largest segment. """
+        rng = np.random.default_rng(1)
+        X = rng.normal(size = (20, 10))
+        Y = rng.normal(size = (20, 1))
+        cv = np.array([1] * 16 + [2] * 4)
+
+        # the largest segment leaves 4 rows, so at most 3 components are possible
+        np.random.seed(2)
+        Xpv9, D9 = pcvpcr(X, Y, 9, cv = cv)
+        np.random.seed(2)
+        Xpv3, _ = pcvpcr(X, Y, 3, cv = cv)
+        self.assertTrue(np.all(np.isfinite(Xpv9)))
+        np.testing.assert_array_equal(Xpv9, Xpv3)
+        self.assertEqual(D9.shape[1], 3)
+
     def test_invalid_cvscope(self):
         """ Invalid cvscope should raise ValueError. """
         self.assertRaises(ValueError, pcvpcr, self.X, self.Y, 3, cvscope='wrong')

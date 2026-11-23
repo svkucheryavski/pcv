@@ -67,7 +67,8 @@ function Xpv = pcvpca(X, nComp, Center, Scale, CV, CVScope)
    % compute number of segments
    nSeg = max(ind);
 
-   maxNComp = min([nRows - round(nRows / nSeg) - 1, nCols, 30]);
+   % the largest segment gives the smallest local calibration set
+   maxNComp = min([nRows - max(accumarray(ind(:), 1)) - 1, nCols, 30]);
 
    if nargin < 2 || nComp > maxNComp
       nComp = maxNComp;

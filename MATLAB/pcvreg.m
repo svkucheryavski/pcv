@@ -35,7 +35,8 @@ function [Xpv, D] = pcvreg(X, Y, nComp, Center, Scale, CV, funlist, CVScope)
    nSeg = max(ind);
 
    % adjust number of components if necessary
-   maxNComp = min([nRows - round(nRows / nSeg) - 1, nPred]);
+   % the largest segment gives the smallest local calibration set
+   maxNComp = min([nRows - max(accumarray(ind(:), 1)) - 1, nPred]);
    if nComp > maxNComp
       nComp = maxNComp;
    end

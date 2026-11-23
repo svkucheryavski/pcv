@@ -27,6 +27,17 @@ function testEdgeCases(testCase)
 
    % wrong CVScope value must raise an error
    verifyError(testCase, @() pcvpca(X, 2, true, false, {"ven", 4}, "wrong"), ?MException);
+
+   % uneven split: the largest segment leaves 4 rows, so at most 3 components are possible
+   rng(1);
+   Xu = randn(20, 10);
+   cvu = [ones(16, 1); 2 * ones(4, 1)];
+   rng(2);
+   Xpv9 = pcvpca(Xu, 9, true, false, cvu);
+   rng(2);
+   Xpv3 = pcvpca(Xu, 3, true, false, cvu);
+   verifyTrue(testCase, all(isfinite(Xpv9(:))));
+   verifyEqual(testCase, Xpv9, Xpv3);
 end
 
 function testCornData(testCase)

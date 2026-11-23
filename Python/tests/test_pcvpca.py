@@ -279,6 +279,32 @@ class TestPCVPCAEdgeCases(unittest.TestCase):
         self.assertEqual(Xpv.shape[0], 6)
         self.assertFalse(np.any(np.isnan(Xpv)))
 
+    def test_uneven_split(self):
+        """ Uneven split: number of components is limited by the largest segment. """
+        X = np.random.default_rng(1).normal(size = (20, 10))
+        cv = np.array([1] * 16 + [2] * 4)
+
+        # the largest segment leaves 4 rows, so at most 3 components are possible
+        np.random.seed(2)
+        Xpv9 = pcvpca(X, 9, cv = cv)
+        np.random.seed(2)
+        Xpv3 = pcvpca(X, 3, cv = cv)
+        self.assertTrue(np.all(np.isfinite(Xpv9)))
+        np.testing.assert_array_equal(Xpv9, Xpv3)
+
+        # orthogonal distances of the PV-set on the global model equal cross-validation
+        mX = X.mean(axis = 0)
+        Xc = X - mX
+        P = np.linalg.svd(Xc, full_matrices = False)[2][:3].T
+        Xpvc = Xpv3 - mX
+        qpv = ((Xpvc - Xpvc @ P @ P.T) ** 2).sum(axis = 1)
+        qcv = np.zeros(20)
+        for k in (1, 2):
+            Pk = np.linalg.svd(Xc[cv != k], full_matrices = False)[2][:3].T
+            Xk = Xc[cv == k]
+            qcv[cv == k] = ((Xk - Xk @ Pk @ Pk.T) ** 2).sum(axis = 1)
+        np.testing.assert_allclose(qpv, qcv)
+
     def test_invalid_cvscope(self):
         """ Invalid cvscope should raise ValueError. """
         X = np.array([1, 3, 17, 19, 10, 14, 7, 13, 9, 11, 2, 15, 8, 6, 4, 12,

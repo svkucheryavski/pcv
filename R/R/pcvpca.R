@@ -94,14 +94,18 @@ pcvpca <- function(X, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven", 4)
 
    X <- scale(X, center = mX, scale = sX)
 
-   # indices for cross-validation
+   # indices for cross-validation (first repetition only)
    ind <- pcvcrossval(cv, nrow(X), seq_len(nrow(X)))
+   if (ncol(ind) > 1) {
+      warning("pcvpca: 'cv' specifies several repetitions, only the first one is used.")
+   }
+   ind <- ind[, 1]
 
    # get number of segments
    nseg <- max(ind)
 
-   # correct maximum number of components
-   max.ncomp <- min(nrow(X) - ceiling(nrow(X) / nseg) - 1 , ncol(X))
+   # correct maximum number of components (the largest segment gives the smallest local set)
+   max.ncomp <- min(nrow(X) - max(tabulate(ind)) - 1, ncol(X))
    if (ncomp > max.ncomp) {
       ncomp <- max.ncomp
    }

@@ -54,12 +54,16 @@ pcvreg <- function(X, Y, ncomp = min(nrow(X) - 1, ncol(X), 30), cv = list("ven",
 
   # get indices for cross-validation
    ind <- pcvcrossval(cv, nRows, Y[, 1])
+   if (ncol(ind) > 1) {
+      warning("pcvreg: 'cv' specifies several repetitions, only the first one is used.")
+   }
+   ind <- ind[, 1]
 
    # get number of segments
    nSeg <- max(ind)
 
-   # correct maximum number of components
-   max.ncomp <- min(nrow(X) - ceiling(nRows / nSeg) - 1, nPred)
+   # correct maximum number of components (the largest segment gives the smallest local set)
+   max.ncomp <- min(nrow(X) - max(tabulate(ind)) - 1, nPred)
    if (ncomp > max.ncomp) {
       ncomp <- max.ncomp
    }

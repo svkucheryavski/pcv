@@ -30,6 +30,19 @@ function testEdgeCases(testCase)
 
    % wrong CVScope value must raise an error
    verifyError(testCase, @() pcvpcr(X, Y, 3, true, false, {"ven", 4}, "wrong"), ?MException);
+
+   % uneven split: the largest segment leaves 4 rows, so at most 3 components are possible
+   rng(1);
+   Xu = randn(20, 10);
+   Yu = randn(20, 1);
+   cvu = [ones(16, 1); 2 * ones(4, 1)];
+   rng(2);
+   [Xpv9, D9] = pcvpcr(Xu, Yu, 9, true, false, cvu);
+   rng(2);
+   Xpv3 = pcvpcr(Xu, Yu, 3, true, false, cvu);
+   verifyTrue(testCase, all(isfinite(Xpv9(:))));
+   verifyEqual(testCase, Xpv9, Xpv3);
+   verifyEqual(testCase, size(D9, 2), 3);
 end
 
 

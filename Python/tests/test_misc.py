@@ -59,6 +59,10 @@ class TestCVMethods(unittest.TestCase):
         self.assertEqual(get_cvncomp(10, 10, 6), 7)
         self.assertEqual(get_cvncomp(10, 10, 10), 8)
 
+        # uneven manual split: the largest segment defines the limit
+        self.assertEqual(get_cvsettings(np.array([1] * 16 + [2] * 4), 20, 9)[1], 3)
+        self.assertEqual(get_cvncomp(20, 9, 2, 16), 3)
+
 
     def test_get_settings_manual(self):
         """

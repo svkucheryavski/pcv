@@ -16,12 +16,16 @@ def get_splits(nrows: int, nseg: int):
 
 
 
-def get_cvncomp(nrows: int, ncomp: int, nseg: int):
+def get_cvncomp(nrows: int, ncomp: int, nseg: int, maxsegsize: int = None):
     """
     Return adjusted number of components by taking into account
     size of local calibration sets inside cross-validation loop.
+    The smallest local set is left when the largest segment (by default
+    ceil(nrows / nseg) rows) is taken out.
     """
-    return min([ncomp, nrows - math.ceil(nrows/nseg) - 1])
+    if maxsegsize is None:
+        maxsegsize = math.ceil(nrows / nseg)
+    return min([ncomp, nrows - maxsegsize - 1])
 
 
 
@@ -34,7 +38,8 @@ def get_cvsettings_manual(cv: np.ndarray, nrows:int, ncomp:int):
     if cv.size != nrows:
         raise ValueError('if argument "cv" is a vector of indices it must have the same size as value of argument "nrows".')
     nseg = max(cv)
-    return (cv, get_cvncomp(nrows, ncomp, nseg), nseg)
+    maxsegsize = max(np.sum(cv == k) for k in np.unique(cv))
+    return (cv, get_cvncomp(nrows, ncomp, nseg, maxsegsize), nseg)
 
 
 
