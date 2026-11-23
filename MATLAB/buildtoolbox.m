@@ -19,10 +19,20 @@ opts.Description = "Procrustes cross-validation is a new approach for validation
    "Check Getting started documentation and see more details here: https://github.com/svkucheryavski/pcv.";
 
 % files included in the toolbox (tests and project files are left out)
-opts.ToolboxFiles = fullfile(root, ["README.md", "corn.mat", "crossval.m", "demo.m", "doc", ...
+opts.ToolboxFiles = fullfile(root, ["LICENSE", "README.md", "corn.mat", "crossval.m", "demo.m", "doc", ...
    "getxpvorth.m", "pcv.m", "pcvpca.m", "pcvpcr.m", "pcvpls.m", "pcvreg.m", "simpls.m"]);
 opts.ToolboxGettingStartedGuide = fullfile(root, "doc", "GettingStarted.mlx");
 opts.ToolboxImageFile = fullfile(root, "..", "logo.png");
+
+% File Exchange requires license information; the property exists only in newer releases
+if isprop(opts, "License")
+   opts.License = "MIT";
+else
+   warning("This MATLAB release cannot store a license field; only the LICENSE file is included.");
+end
+
+% the code uses "..." strings, available from R2017a
+opts.MinimumMatlabRelease = "R2017a";
 
 opts.SupportedPlatforms.Win64 = true;
 opts.SupportedPlatforms.Glnxa64 = true;
